@@ -4,92 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ФКУ Дневник</title>
+  <link rel="stylesheet" href="styles.css">
   <script>
-    // Диагностика ошибок прямо на экране
     window.onerror = function(msg, url, line) {
-      const errBox = document.getElementById('debugErrorBox');
-      if (errBox) {
-        errBox.style.display = 'block';
-        errBox.textContent = 'Ошибка: ' + msg + ' (строка ' + line + ')';
-      }
+      const b = document.getElementById('debugErrorBox');
+      if (b) { b.style.display = 'block'; b.textContent = 'Ошибка: ' + msg + ' (' + line + ')'; }
       return false;
     };
   </script>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="config.js"></script>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-    body { background: #f8fafc; color: #0f172a; padding-bottom: 90px; }
-    
-    #debugErrorBox { display: none; background: #ef4444; color: #fff; padding: 8px 12px; font-size: 12px; font-weight: bold; position: sticky; top: 0; z-index: 100; text-align: center; }
-
-    .header { background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 20; padding: 10px 14px; }
-    .header-top { display: flex; justify-content: space-between; align-items: center; }
-    .header-title { font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; }
-    .icon-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; font-size: 16px; touch-action: manipulation; }
-    
-    .date-nav { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 8px; margin-top: 8px; }
-    .date-btn { background: none; border: none; font-size: 13px; font-weight: 600; color: #475569; padding: 6px 10px; cursor: pointer; border-radius: 8px; touch-action: manipulation; }
-    .date-btn:active { background: #e2e8f0; }
-    .date-display { font-size: 13px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px; cursor: pointer; position: relative; padding: 4px; }
-    .today-tag { font-size: 10px; background: #10b981; color: #fff; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
-    #hiddenDatePicker { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
-
-    .container { max-width: 460px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
-    .card { background: #fff; border-radius: 16px; padding: 14px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
-    
-    .badge { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 20px; }
-    .badge-ok { background: #dcfce7; color: #15803d; }
-    .badge-warn { background: #fee2e2; color: #b91c1c; }
-    
-    .progress-bar-bg { width: 100%; background: #e2e8f0; height: 10px; border-radius: 10px; overflow: hidden; margin: 8px 0; }
-    .progress-bar-fill { height: 100%; border-radius: 10px; transition: width 0.3s ease; }
-    .fill-ok { background: #10b981; }
-    .fill-warn { background: #ef4444; }
-
-    .aks-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-top: 8px; }
-    .aks-btn { border: none; padding: 10px 4px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; transition: 0.2s; touch-action: manipulation; }
-    .aks-off { background: #f1f5f9; color: #64748b; }
-    .aks-on { background: #2563eb; color: #fff; }
-
-    .meal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .meal-title { font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 4px; }
-    .food-item { background: #f8fafc; border: 1px solid #f1f5f9; border-radius: 10px; padding: 8px 10px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; margin-bottom: 6px; }
-    .food-info { font-weight: 600; color: #1e293b; }
-    .food-sub { font-size: 11px; color: #64748b; font-weight: normal; }
-    .food-right { display: flex; align-items: center; gap: 8px; }
-    .food-phe { font-weight: 700; color: #047857; }
-    .del-btn { background: none; border: none; color: #94a3b8; cursor: pointer; padding: 4px; font-size: 14px; touch-action: manipulation; }
-
-    .btn-add { width: 100%; background: #ecfdf5; color: #059669; border: 1px dashed #a7f3d0; border-radius: 10px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 4px; touch-action: manipulation; }
-    .btn-add:active { background: #d1fae5; }
-    .btn-primary { width: 100%; background: #10b981; color: #fff; border: none; border-radius: 12px; padding: 12px; font-size: 14px; font-weight: 700; cursor: pointer; touch-action: manipulation; }
-    .btn-primary:active { background: #059669; }
-
-    /* Modal */
-    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15,23,42,0.6); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
-    .modal.active { display: flex !important; }
-    .modal-content { background: #fff; width: 100%; max-width: 460px; border-radius: 24px 24px 0 0; padding: 18px; max-height: 90vh; overflow-y: auto; box-shadow: 0 -4px 20px rgba(0,0,0,0.15); }
-    .input-group { margin-bottom: 10px; }
-    .input-label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
-    .input-control { width: 100%; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
-    .input-highlight { border: 2px solid #10b981; background: #f0fdf4; font-weight: bold; font-size: 15px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-    .category-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; -webkit-overflow-scrolling: touch; }
-    .chip { font-size: 11px; padding: 6px 12px; border-radius: 14px; background: #f1f5f9; color: #475569; border: none; cursor: pointer; white-space: nowrap; font-weight: 600; touch-action: manipulation; }
-    .chip.active { background: #10b981; color: #fff; }
-    
-    .food-search-list { max-height: 150px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; background: #fafafa; -webkit-overflow-scrolling: touch; }
-    .search-item { padding: 9px 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 12px; touch-action: manipulation; }
-    .search-item:active { background: #ecfdf5; }
-    .search-item-name { font-weight: 600; color: #1e293b; }
-    .search-item-meta { font-size: 11px; color: #047857; font-weight: bold; }
-  </style>
+  <script src="products.js"></script>
 </head>
 <body>
 
-  <!-- Блок ошибок для диагностики -->
   <div id="debugErrorBox"></div>
 
   <!-- Шапка -->
@@ -99,7 +27,6 @@
       <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
     </div>
 
-    <!-- Панель дат -->
     <div class="date-nav">
       <button class="date-btn" onclick="changeDate(-1)">◀ Вчера</button>
       <div class="date-display" onclick="openDatePicker()">
@@ -114,7 +41,7 @@
 
   <div class="container">
 
-    <!-- Карточка баланса Фа -->
+    <!-- Баланс Фа -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Фенилаланин (Фа)</span>
@@ -142,7 +69,7 @@
       </div>
     </div>
 
-    <!-- Трекер АКС -->
+    <!-- АКС -->
     <div class="card">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Смесь (АКС)</span>
@@ -153,44 +80,32 @@
 
     <!-- Приемы пищи -->
     <div class="card">
-      <div class="meal-head">
-        <span class="meal-title">☀️ Завтрак</span>
-        <span id="breakfastTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span>
-      </div>
+      <div class="meal-head"><span class="meal-title">☀️ Завтрак</span><span id="breakfastTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
       <div id="breakfastList"></div>
       <button class="btn-add" onclick="openAddFoodModal('Завтрак')">+ Добавить в завтрак</button>
     </div>
 
     <div class="card">
-      <div class="meal-head">
-        <span class="meal-title">🍲 Обед</span>
-        <span id="lunchTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span>
-      </div>
+      <div class="meal-head"><span class="meal-title">🍲 Обед</span><span id="lunchTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
       <div id="lunchList"></div>
       <button class="btn-add" onclick="openAddFoodModal('Обед')">+ Добавить в обед</button>
     </div>
 
     <div class="card">
-      <div class="meal-head">
-        <span class="meal-title">🌙 Ужин</span>
-        <span id="dinnerTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span>
-      </div>
+      <div class="meal-head"><span class="meal-title">🌙 Ужин</span><span id="dinnerTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
       <div id="dinnerList"></div>
       <button class="btn-add" onclick="openAddFoodModal('Ужин')">+ Добавить в ужин</button>
     </div>
 
     <div class="card">
-      <div class="meal-head">
-        <span class="meal-title">🍎 Перекус</span>
-        <span id="snackTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span>
-      </div>
+      <div class="meal-head"><span class="meal-title">🍎 Перекус</span><span id="snackTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
       <div id="snackList"></div>
       <button class="btn-add" onclick="openAddFoodModal('Перекус')">+ Добавить в перекус</button>
     </div>
 
   </div>
 
-  <!-- Модальное окно добавления продукта -->
+  <!-- Модалка добавления еды -->
   <div id="addModal" class="modal">
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -198,12 +113,10 @@
         <button class="icon-btn" onclick="closeModal('addModal')">✕</button>
       </div>
 
-      <!-- Живой поиск -->
       <div class="input-group">
         <input type="text" id="foodSearchInput" class="input-control" placeholder="🔍 Поиск продукта в базе..." oninput="filterFoodList()">
       </div>
 
-      <!-- Чипсы категорий -->
       <div class="category-chips">
         <button class="chip active" onclick="setCategory('all', this)">Все</button>
         <button class="chip" onclick="setCategory('veg', this)">🥦 Овощи</button>
@@ -213,10 +126,8 @@
         <button class="chip" onclick="setCategory('grain', this)">🌾 Крупы</button>
       </div>
 
-      <!-- Список результатов поиска -->
       <div class="food-search-list" id="foodSearchListContainer"></div>
 
-      <!-- Поля выбранного продукта -->
       <div class="input-group">
         <label class="input-label">Название продукта</label>
         <input type="text" id="foodNameInput" class="input-control" placeholder="Например: Кабачок">
@@ -247,7 +158,7 @@
     </div>
   </div>
 
-  <!-- Модальное окно настроек -->
+  <!-- Модалка настроек -->
   <div id="settingsModal" class="modal">
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
@@ -266,465 +177,7 @@
     </div>
   </div>
 
-  <script>
-    let DB_URL = '';
-    let DB_KEY = '';
-    try {
-      if (typeof SUPABASE_URL !== 'undefined') DB_URL = SUPABASE_URL;
-      if (typeof SUPABASE_KEY !== 'undefined') DB_KEY = SUPABASE_KEY;
-    } catch(e){}
-
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      try { tg.ready(); tg.expand(); } catch(e){}
-    }
-
-    const tgUser = tg?.initDataUnsafe?.user || { id: 99999999, first_name: "Пользователь" };
-    const currentTelegramId = tgUser.id;
-
-    // База продуктов
-    const FOOD_BASE = [
-      { name: "Кабачок свежий", cat: "veg", phe: 30, prot: 0.6 },
-      { name: "Огурец свежий", cat: "veg", phe: 20, prot: 0.8 },
-      { name: "Помидор свежий", cat: "veg", phe: 25, prot: 0.9 },
-      { name: "Морковь", cat: "veg", phe: 35, prot: 1.3 },
-      { name: "Картофель отварной", cat: "veg", phe: 85, prot: 2.0 },
-      { name: "Капуста белокочанная", cat: "veg", phe: 45, prot: 1.8 },
-      { name: "Цветная капуста", cat: "veg", phe: 65, prot: 2.5 },
-      { name: "Брокколи", cat: "veg", phe: 80, prot: 3.0 },
-      { name: "Тыква", cat: "veg", phe: 30, prot: 1.0 },
-      { name: "Свекла отварная", cat: "veg", phe: 45, prot: 1.7 },
-      { name: "Баклажан", cat: "veg", phe: 35, prot: 1.2 },
-      { name: "Зелень укроп петрушка", cat: "veg", phe: 60, prot: 2.5 },
-
-      { name: "Яблоко свежее", cat: "fruit", phe: 15, prot: 0.4 },
-      { name: "Груша", cat: "fruit", phe: 15, prot: 0.4 },
-      { name: "Банан", cat: "fruit", phe: 45, prot: 1.1 },
-      { name: "Апельсин Мандарин", cat: "fruit", phe: 30, prot: 0.9 },
-      { name: "Персик Нектарин", cat: "fruit", phe: 30, prot: 0.9 },
-      { name: "Клубника", cat: "fruit", phe: 25, prot: 0.8 },
-      { name: "Малина", cat: "fruit", phe: 25, prot: 0.8 },
-      { name: "Арбуз", cat: "fruit", phe: 15, prot: 0.6 },
-      { name: "Дыня", cat: "fruit", phe: 20, prot: 0.6 },
-      { name: "Виноград", cat: "fruit", phe: 20, prot: 0.6 },
-
-      { name: "МакМастер: Вермишель н/б", cat: "special", phe: 15, prot: 0.5 },
-      { name: "МакМастер: Мука безбелковая", cat: "special", phe: 10, prot: 0.3 },
-      { name: "МакМастер: Рис н/б", cat: "special", phe: 15, prot: 0.5 },
-      { name: "МакМастер: Гречка н/б", cat: "special", phe: 15, prot: 0.5 },
-      { name: "Balviten: Хлеб н/б", cat: "special", phe: 20, prot: 0.6 },
-      { name: "Balviten: Мука н/б", cat: "special", phe: 15, prot: 0.5 },
-      { name: "Безглютен: Печенье н/б", cat: "special", phe: 25, prot: 0.8 },
-      { name: "Саго крупа", cat: "special", phe: 12, prot: 0.3 },
-      { name: "Заменитель яйца н/б", cat: "special", phe: 10, prot: 0.2 },
-
-      { name: "Масло сливочное 82%", cat: "sweet", phe: 25, prot: 0.5 },
-      { name: "Масло растительное", cat: "sweet", phe: 0, prot: 0.0 },
-      { name: "Сахар песок", cat: "sweet", phe: 0, prot: 0.0 },
-      { name: "Мед натуральный", cat: "sweet", phe: 10, prot: 0.3 },
-      { name: "Мармелад", cat: "sweet", phe: 5, prot: 0.1 },
-
-      { name: "Рис обычный", cat: "grain", phe: 320, prot: 7.0 },
-      { name: "Гречка обычная", cat: "grain", phe: 450, prot: 12.0 },
-      { name: "Овсяные хлопья", cat: "grain", phe: 480, prot: 12.5 },
-      { name: "Хлеб пшеничный", cat: "grain", phe: 380, prot: 7.5 }
-    ];
-
-    let currentFilteredList = [...FOOD_BASE];
-    let currentDateObj = new Date();
-    let currentCategory = 'all';
-
-    let appData = {
-      settings: { dailyPhe: 300, aksPortions: 4 },
-      today: getFormattedDate(currentDateObj),
-      aks: [false, false, false, false],
-      entries: []
-    };
-
-    let activeMeal = 'Завтрак';
-
-    function getFormattedDate(d) {
-      const year = d.getFullYear();
-      const month = String(d.getMonth() + 1).padStart(2, '0');
-      const day = String(d.getDate()).padStart(2, '0');
-      return year + '-' + month + '-' + day;
-    }
-
-    function updateDateUI() {
-      try {
-        const selectedStr = getFormattedDate(currentDateObj);
-        const actualTodayStr = getFormattedDate(new Date());
-        appData.today = selectedStr;
-
-        const isToday = (selectedStr === actualTodayStr);
-        const todayBadge = document.getElementById('todayBadge');
-        if (todayBadge) todayBadge.style.display = isToday ? 'inline-block' : 'none';
-
-        const options = { day: 'numeric', month: 'short' };
-        const label = document.getElementById('dateDisplayLabel');
-        if (label) label.textContent = currentDateObj.toLocaleDateString('ru-RU', options);
-        
-        const picker = document.getElementById('hiddenDatePicker');
-        if (picker) picker.value = selectedStr;
-
-        loadDayData();
-      } catch(e){ console.error('updateDateUI error:', e); }
-    }
-
-    function changeDate(daysOffset) {
-      currentDateObj.setDate(currentDateObj.getDate() + daysOffset);
-      updateDateUI();
-    }
-
-    function openDatePicker() {
-      const picker = document.getElementById('hiddenDatePicker');
-      if (picker) {
-        if (typeof picker.showPicker === 'function') {
-          picker.showPicker();
-        } else {
-          picker.click();
-        }
-      }
-    }
-
-    function onDatePicked(val) {
-      if (!val) return;
-      const parts = val.split('-');
-      currentDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
-      updateDateUI();
-    }
-
-    function loadDayData() {
-      const local = localStorage.getItem('pku_diary_' + currentTelegramId + '_' + appData.today);
-      if (local) {
-        try {
-          const parsed = JSON.parse(local);
-          appData.entries = parsed.entries || [];
-          appData.aks = parsed.aks || new Array(appData.settings.aksPortions).fill(false);
-        } catch(e){}
-      } else {
-        appData.entries = [];
-        appData.aks = new Array(appData.settings.aksPortions).fill(false);
-      }
-
-      render();
-      syncWithSupabase();
-    }
-
-    function init() {
-      try {
-        const savedSettings = localStorage.getItem('pku_settings_' + currentTelegramId);
-        if (savedSettings) {
-          try { appData.settings = JSON.parse(savedSettings); } catch(e){}
-        }
-
-        filterFoodList();
-        updateDateUI();
-      } catch(e){
-        console.error('init error:', e);
-      }
-    }
-
-    function setCategory(cat, btn) {
-      currentCategory = cat;
-      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-      if (btn) btn.classList.add('active');
-      filterFoodList();
-    }
-
-    function filterFoodList() {
-      const query = (document.getElementById('foodSearchInput')?.value || '').toLowerCase().trim();
-      currentFilteredList = FOOD_BASE.filter(item => {
-        const matchesCat = (currentCategory === 'all' || item.cat === currentCategory);
-        const matchesQuery = !query || item.name.toLowerCase().includes(query);
-        return matchesCat && matchesQuery;
-      });
-      renderFoodSearchList();
-    }
-
-    function renderFoodSearchList() {
-      const container = document.getElementById('foodSearchListContainer');
-      if (!container) return;
-
-      if (currentFilteredList.length === 0) {
-        container.innerHTML = '<div style="padding:12px; text-align:center; font-size:12px; color:#94a3b8;">Ничего не найдено (введите название вручную ниже)</div>';
-        return;
-      }
-
-      let html = '';
-      for (let i = 0; i < currentFilteredList.length; i++) {
-        const f = currentFilteredList[i];
-        html += '<div class="search-item" onclick="selectFoodByIndex(' + i + ')">' +
-                  '<div class="search-item-name">' + f.name + '</div>' +
-                  '<div class="search-item-meta">' + f.phe + ' мг Фа <span style="color:#64748b; font-weight:normal;">(' + f.prot + 'г б.)</span></div>' +
-                '</div>';
-      }
-      container.innerHTML = html;
-    }
-
-    function selectFoodByIndex(i) {
-      const item = currentFilteredList[i];
-      if (!item) return;
-      document.getElementById('foodNameInput').value = item.name;
-      document.getElementById('phe100Input').value = item.phe;
-      document.getElementById('prot100Input').value = item.prot;
-      calcPreview();
-    }
-
-    async function syncWithSupabase() {
-      if (!DB_URL.startsWith('http') || DB_URL.includes('ВАШ_ПРОЕКТ')) return;
-      try {
-        const headers = { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY };
-        
-        const resUser = await fetch(DB_URL + '/rest/v1/users?telegram_id=eq.' + currentTelegramId, { headers });
-        const users = await resUser.json();
-        if (users && users.length > 0) {
-          appData.settings.dailyPhe = users[0].daily_phe || 300;
-          appData.settings.aksPortions = users[0].aks_portions || 4;
-        }
-
-        const resEntries = await fetch(DB_URL + '/rest/v1/diary_entries?telegram_id=eq.' + currentTelegramId + '&entry_date=eq.' + appData.today, { headers });
-        const entries = await resEntries.json();
-        if (entries && Array.isArray(entries)) {
-          appData.entries = entries.map(e => ({
-            id: e.id,
-            meal: e.meal_type,
-            name: e.food_name,
-            weight: Number(e.weight_g),
-            phe: Number(e.phe_mg),
-            prot: Number(e.protein_g)
-          }));
-        }
-
-        const resAks = await fetch(DB_URL + '/rest/v1/aks_logs?telegram_id=eq.' + currentTelegramId + '&log_date=eq.' + appData.today, { headers });
-        const aksLogs = await resAks.json();
-        if (aksLogs && Array.isArray(aksLogs)) {
-          appData.aks = new Array(appData.settings.aksPortions).fill(false);
-          aksLogs.forEach(log => {
-            if (log.portion_index < appData.aks.length) {
-              appData.aks[log.portion_index] = log.is_taken;
-            }
-          });
-        }
-
-        render();
-        saveLocal();
-      } catch(e) {
-        console.log("Supabase sync:", e);
-      }
-    }
-
-    function saveLocal() {
-      localStorage.setItem('pku_diary_' + currentTelegramId + '_' + appData.today, JSON.stringify({
-        entries: appData.entries,
-        aks: appData.aks
-      }));
-      localStorage.setItem('pku_settings_' + currentTelegramId, JSON.stringify(appData.settings));
-    }
-
-    function render() {
-      try {
-        const limitPhe = appData.settings.dailyPhe;
-        const limitProt = (limitPhe / 50).toFixed(1);
-        document.getElementById('limitPheText').textContent = limitPhe;
-        document.getElementById('limitProteinText').textContent = limitProt;
-
-        let consumedPhe = 0;
-        let consumedProt = 0;
-        const mealSums = { 'Завтрак': 0, 'Обед': 0, 'Ужин': 0, 'Перекус': 0 };
-
-        ['breakfastList', 'lunchList', 'dinnerList', 'snackList'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.innerHTML = '';
-        });
-
-        appData.entries.forEach(item => {
-          consumedPhe += item.phe;
-          consumedProt += item.prot;
-          mealSums[item.meal] += item.phe;
-
-          const listId = item.meal === 'Завтрак' ? 'breakfastList' : item.meal === 'Обед' ? 'lunchList' : item.meal === 'Ужин' ? 'dinnerList' : 'snackList';
-          const el = document.getElementById(listId);
-          if (el) {
-            el.innerHTML += '<div class="food-item">' +
-                              '<div>' +
-                                '<div class="food-info">' + item.name + '</div>' +
-                                '<div class="food-sub">' + item.weight + ' г (' + item.prot + ' г б.)</div>' +
-                              '</div>' +
-                              '<div class="food-right">' +
-                                '<span class="food-phe">' + item.phe + ' мг</span>' +
-                                '<button class="del-btn" onclick="deleteFood(' + item.id + ')">🗑️</button>' +
-                              '</div>' +
-                            '</div>';
-          }
-        });
-
-        document.getElementById('consumedPheText').textContent = consumedPhe;
-        document.getElementById('consumedProteinText').textContent = consumedProt.toFixed(1);
-        document.getElementById('breakfastTotal').textContent = mealSums['Завтрак'] + ' мг Фа';
-        document.getElementById('lunchTotal').textContent = mealSums['Обед'] + ' мг Фа';
-        document.getElementById('dinnerTotal').textContent = mealSums['Ужин'] + ' мг Фа';
-        document.getElementById('snackTotal').textContent = mealSums['Перекус'] + ' мг Фа';
-
-        const rem = limitPhe - consumedPhe;
-        const badge = document.getElementById('pheStatusBadge');
-        const bar = document.getElementById('pheProgressBar');
-        const percent = Math.min(Math.round((consumedPhe / limitPhe) * 100), 100);
-        bar.style.width = percent + '%';
-
-        if (rem >= 0) {
-          document.getElementById('remainingPheText').textContent = rem + ' мг';
-          document.getElementById('remainingPheText').style.color = '#10b981';
-          badge.className = 'badge badge-ok'; badge.textContent = 'В норме';
-          bar.className = 'progress-bar-fill fill-ok';
-        } else {
-          document.getElementById('remainingPheText').textContent = 'Перебор ' + Math.abs(rem) + ' мг';
-          document.getElementById('remainingPheText').style.color = '#ef4444';
-          badge.className = 'badge badge-warn'; badge.textContent = 'Превышено!';
-          bar.className = 'progress-bar-fill fill-warn';
-        }
-
-        // АКС
-        const aksDiv = document.getElementById('aksContainer');
-        if (aksDiv) {
-          aksDiv.innerHTML = '';
-          let takenCnt = 0;
-          appData.aks.forEach((isTaken, i) => {
-            if (isTaken) takenCnt++;
-            aksDiv.innerHTML += '<button class="aks-btn ' + (isTaken ? 'aks-on' : 'aks-off') + '" onclick="toggleAks(' + i + ')">' + (i+1) + '-я порция</button>';
-          });
-          document.getElementById('aksProgressText').textContent = takenCnt + ' / ' + appData.aks.length + ' порций';
-        }
-      } catch(e){
-        console.error('render error:', e);
-      }
-    }
-
-    function calcPreview() {
-      const w = parseFloat(document.getElementById('weightInput').value) || 0;
-      let phe = parseFloat(document.getElementById('phe100Input').value) || 0;
-      let prot = parseFloat(document.getElementById('prot100Input').value) || 0;
-      if (prot > 0 && phe === 0) { phe = prot * 50; document.getElementById('phe100Input').value = Math.round(phe); }
-
-      const totalPhe = Math.round((w * phe) / 100);
-      const totalProt = ((w * prot) / 100).toFixed(2);
-      document.getElementById('previewCalc').textContent = totalPhe + ' мг Фа (' + totalProt + ' г б.)';
-    }
-
-    function openAddFoodModal(m) {
-      activeMeal = m;
-      document.getElementById('modalMealTitle').textContent = 'Добавить в ' + m.toLowerCase();
-      document.getElementById('foodSearchInput').value = '';
-      document.getElementById('foodNameInput').value = '';
-      document.getElementById('phe100Input').value = '';
-      document.getElementById('prot100Input').value = '';
-      document.getElementById('weightInput').value = '';
-      currentCategory = 'all';
-      document.querySelectorAll('.chip').forEach((c, idx) => c.classList.toggle('active', idx === 0));
-      filterFoodList();
-      calcPreview();
-      openModal('addModal');
-    }
-
-    async function saveFood() {
-      const name = document.getElementById('foodNameInput').value.trim() || 'Продукт';
-      const w = parseFloat(document.getElementById('weightInput').value) || 0;
-      const phe100 = parseFloat(document.getElementById('phe100Input').value) || 0;
-      const prot100 = parseFloat(document.getElementById('prot100Input').value) || 0;
-
-      if (w <= 0) { alert('Укажите вес в граммах'); return; }
-
-      const totalPhe = Math.round((w * phe100) / 100);
-      const totalProt = parseFloat(((w * prot100) / 100).toFixed(2));
-      const tempId = Date.now();
-
-      appData.entries.push({ id: tempId, meal: activeMeal, name: name, weight: w, phe: totalPhe, prot: totalProt });
-      saveLocal();
-      render();
-      closeModal('addModal');
-
-      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
-        try {
-          await fetch(DB_URL + '/rest/v1/diary_entries', {
-            method: 'POST',
-            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegram_id: currentTelegramId, entry_date: appData.today, meal_type: activeMeal, food_name: name, weight_g: w, phe_mg: totalPhe, protein_g: totalProt })
-          });
-        } catch(e){}
-      }
-    }
-
-    async function deleteFood(id) {
-      appData.entries = appData.entries.filter(e => e.id !== id);
-      saveLocal();
-      render();
-
-      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
-        try {
-          await fetch(DB_URL + '/rest/v1/diary_entries?id=eq.' + id, {
-            method: 'DELETE',
-            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY }
-          });
-        } catch(e){}
-      }
-    }
-
-    async function toggleAks(i) {
-      appData.aks[i] = !appData.aks[i];
-      saveLocal();
-      render();
-
-      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
-        try {
-          await fetch(DB_URL + '/rest/v1/aks_logs', {
-            method: 'POST',
-            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-            body: JSON.stringify({ telegram_id: currentTelegramId, log_date: appData.today, portion_index: i, is_taken: appData.aks[i] })
-          });
-        } catch(e){}
-      }
-    }
-
-    function openModal(id) {
-      if (id === 'settingsModal') {
-        document.getElementById('settingDailyPhe').value = appData.settings.dailyPhe;
-        document.getElementById('settingAksPortions').value = appData.settings.aksPortions;
-      }
-      const el = document.getElementById(id);
-      if (el) el.classList.add('active');
-    }
-
-    function closeModal(id) {
-      const el = document.getElementById(id);
-      if (el) el.classList.remove('active');
-    }
-
-    async function saveSettings() {
-      const phe = parseInt(document.getElementById('settingDailyPhe').value) || 300;
-      const aksCount = parseInt(document.getElementById('settingAksPortions').value) || 4;
-      appData.settings.dailyPhe = phe;
-      if (appData.settings.aksPortions !== aksCount) {
-        appData.settings.aksPortions = aksCount;
-        appData.aks = new Array(aksCount).fill(false);
-      }
-      saveLocal();
-      render();
-      closeModal('settingsModal');
-
-      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
-        try {
-          await fetch(DB_URL + '/rest/v1/users?telegram_id=eq.' + currentTelegramId, {
-            method: 'PATCH',
-            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ daily_phe: phe, aks_portions: aksCount })
-          });
-        } catch(e){}
-      }
-    }
-
-    // Запуск
-    window.addEventListener('DOMContentLoaded', init);
-    init();
-  </script>
+  <!-- Подключение файла с логикой -->
+  <script src="app.js"></script>
 </body>
 </html>
