@@ -1,0 +1,47 @@
+// База продуктов для диеты ФКУ
+const FOOD_BASE = [
+  { name: "Кабачок свежий", cat: "veg", phe: 30, prot: 0.6 },
+  { name: "Огурец свежий", cat: "veg", phe: 20, prot: 0.8 },
+  { name: "Помидор свежий", cat: "veg", phe: 25, prot: 0.9 },
+  { name: "Морковь", cat: "veg", phe: 35, prot: 1.3 },
+  { name: "Картофель отварной", cat: "veg", phe: 85, prot: 2.0 },
+  { name: "Капуста белокочанная", cat: "veg", phe: 45, prot: 1.8 },
+  { name: "Цветная капуста", cat: "veg", phe: 65, prot: 2.5 },
+  { name: "Брокколи", cat: "veg", phe: 80, prot: 3.0 },
+  { name: "Тыква", cat: "veg", phe: 30, prot: 1.0 },
+  { name: "Свекла отварная", cat: "veg", phe: 45, prot: 1.7 },
+  { name: "Баклажан", cat: "veg", phe: 35, prot: 1.2 },
+  { name: "Зелень укроп петрушка", cat: "veg", phe: 60, prot: 2.5 },
+
+  { name: "Яблоко свежее", cat: "fruit", phe: 15, prot: 0.4 },
+  { name: "Груша", cat: "fruit", phe: 15, prot: 0.4 },
+  { name: "Банан", cat: "fruit", phe: 45, prot: 1.1 },
+  { name: "Апельсин Мандарин", cat: "fruit", phe: 30, prot: 0.9 },
+  { name: "Персик Нектарин", cat: "fruit", phe: 30, prot: 0.9 },
+  { name: "Клубника", cat: "fruit", phe: 25, prot: 0.8 },
+  { name: "Малина", cat: "fruit", phe: 25, prot: 0.8 },
+  { name: "Арбуз", cat: "fruit", phe: 15, prot: 0.6 },
+  { name: "Дыня", cat: "fruit", phe: 20, prot: 0.6 },
+  { name: "Виноград", cat: "fruit", phe: 20, prot: 0.6 },
+
+  { name: "МакМастер: Вермишель н/б", cat: "special", phe: 15, prot: 0.5 },
+  { name: "МакМастер: Мука безбелковая", cat: "special", phe: 10, prot: 0.3 },
+  { name: "МакМастер: Рис н/б", cat: "special", phe: 15, prot: 0.5 },
+  { name: "МакМастер: Гречка н/б", cat: "special", phe: 15, prot: 0.5 },
+  { name: "Balviten: Хлеб н/б", cat: "special", phe: 20, prot: 0.6 },
+  { name: "Balviten: Мука н/б", cat: "special", phe: 15, prot: 0.5 },
+  { name: "Безглютен: Печенье н/б", cat: "special", phe: 25, prot: 0.8 },
+  { name: "Саго крупа", cat: "special", phe: 12, prot: 0.3 },
+  { name: "Заменитель яйца н/б", cat: "special", phe: 10, prot: 0.2 },
+
+  { name: "Масло сливочное 82%", cat: "sweet", phe: 25, prot: 0.5 },
+  { name: "Масло растительное", cat: "sweet", phe: 0, prot: 0.0 },
+  { name: "Сахар песок", cat: "sweet", phe: 0, prot: 0.0 },
+  { name: "Мед натуральный", cat: "sweet", phe: 10, prot: 0.3 },
+  { name: "Мармелад", cat: "sweet", phe: 5, prot: 0.1 },
+
+  { name: "Рис обычный", cat: "grain", phe: 320, prot: 7.0 },
+  { name: "Гречка обычная", cat: "grain", phe: 450, prot: 12.0 },
+  { name: "Овсяные хлопья", cat: "grain", phe: 480, prot: 12.5 },
+  { name: "Хлеб пшеничный", cat: "grain", phe: 380, prot: 7.5 }
+];
