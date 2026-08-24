@@ -1,4 +1,4 @@
-// app.js — Логика приложения ФКУ Дневник (с поддержкой личных продуктов)
+// app.js — Логика приложения ФКУ Дневник (с поддержкой Конструктора Рецептов)
 
 let DB_URL = '';
 let DB_KEY = '';
@@ -15,8 +15,11 @@ if (tg) {
 const tgUser = tg?.initDataUnsafe?.user || { id: 99999999, first_name: "Пользователь" };
 const currentTelegramId = tgUser.id;
 
-// Личные продукты пользователя
+// Личные продукты и рецепты пользователя
 let userCustomProducts = [];
+
+// Временные ингредиенты для текущего создаваемого рецепта
+let currentRecipeIngredients = [];
 
 let currentFilteredList = [];
 let currentDateObj = new Date();
@@ -38,7 +41,7 @@ function getFormattedDate(d) {
   return year + '-' + month + '-' + day;
 }
 
-// Объединенный список (общая база + личные продукты)
+// Объединенный список (общая база + личные продукты/рецепты)
 function getAllProducts() {
   const base = (typeof FOOD_BASE !== 'undefined') ? FOOD_BASE : [];
   const custom = userCustomProducts.map((p, idx) => ({ ...p, cat: 'custom', isCustom: true, customIndex: idx }));
@@ -110,14 +113,13 @@ function init() {
       try { appData.settings = JSON.parse(savedSettings); } catch(e){}
     }
 
-    // Загрузка личных продуктов из локальной памяти
     const savedCustom = localStorage.getItem('pku_custom_products_' + currentTelegramId);
     if (savedCustom) {
       try { userCustomProducts = JSON.parse(savedCustom); } catch(e){}
     }
 
-    // Добавляем кнопку категории "Мои продукты", если ее еще нет
     setupCustomCategoryChip();
+    setupRecipeUI();
 
     filterFoodList();
     updateDateUI();
@@ -132,11 +134,222 @@ function setupCustomCategoryChip() {
     const btn = document.createElement('button');
     btn.id = 'customChipBtn';
     btn.className = 'chip';
-    btn.textContent = '⭐ Мои продукты';
+    btn.textContent = '⭐ Мои продукты / Рецепты';
     btn.onclick = function() { setCategory('custom', this); };
-    // Вставляем после кнопки "Все"
     chipContainer.insertBefore(btn, chipContainer.children[1]);
   }
+}
+
+// Встраиваем кнопку Рецептов в шапку и модальное окно конструктора
+function setupRecipeUI() {
+  const topHeader = document.querySelector('.header-top');
+  if (topHeader && !document.getElementById('recipeBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'recipeBtn';
+    btn.className = 'icon-btn';
+    btn.style.marginRight = '6px';
+    btn.textContent = '🍲';
+    btn.title = 'Конструктор рецептов';
+    btn.onclick = openRecipeModal;
+    topHeader.insertBefore(btn, topHeader.querySelector('.icon-btn'));
+  }
+
+  // Создаем модальное окно рецептов, если его еще нет
+  if (!document.getElementById('recipeModal')) {
+    const modalDiv = document.createElement('div');
+    modalDiv.id = 'recipeModal';
+    modalDiv.className = 'modal';
+    modalDiv.innerHTML = `
+      <div class="modal-content">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:16px; font-weight:700;">🍲 Конструктор рецептов</h3>
+          <button class="icon-btn" onclick="closeModal('recipeModal')">✕</button>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Название составного блюда</label>
+          <input type="text" id="recipeNameInput" class="input-control" placeholder="Например: Овощной суп с н/б макаронами">
+        </div>
+
+        <!-- Добавление ингредиента -->
+        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin-bottom:10px;">
+          <span style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;">Добавить ингредиент</span>
+          <div style="margin-top:6px;">
+            <select id="recipeIngredientSelect" class="input-control" style="margin-bottom:6px;">
+              <option value="">-- Выберите продукт --</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <input type="number" id="recipeIngredientWeight" class="input-control" placeholder="Вес (г)" style="width:120px;">
+            <button class="btn-primary" style="padding:8px 12px; font-size:12px;" onclick="addIngredientToRecipe()">+ Добавить</button>
+          </div>
+        </div>
+
+        <!-- Список добавленных ингредиентов -->
+        <div style="margin-bottom:10px;">
+          <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Ингредиенты блюда:</span>
+          <div id="recipeIngredientsList" style="margin-top:4px; max-height:120px; overflow-y:auto;">
+            <div style="font-size:12px; color:#94a3b8; padding:6px 0;">Ингредиенты еще не добавлены</div>
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Итоговый вес готового блюда (г)</label>
+          <input type="number" id="recipeCookedWeightInput" class="input-control input-highlight" placeholder="Например: 500" oninput="calculateRecipeTotals()">
+          <span style="font-size:10px; color:#64748b; display:block; margin-top:2px;">Взвесьте кастрюлю/блюдо после приготовления</span>
+        </div>
+
+        <!-- Итоговые показатели на 100г -->
+        <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:12px; border-radius:12px; margin-bottom:12px;">
+          <div style="font-size:11px; color:#065f46; font-weight:600;">РАСЧЕТ НА 100 Г ГОТОВОГО БЛЮДА:</div>
+          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
+            <span style="font-size:16px; font-weight:800; color:#047857;" id="recipeResultPhe">0 мг Фа</span>
+            <span style="font-size:13px; font-weight:700; color:#047857;" id="recipeResultProt">0.0 г белка</span>
+          </div>
+        </div>
+
+        <button class="btn-primary" onclick="saveRecipeToProducts()">⭐ Сохранить рецепт в Мои продукты</button>
+      </div>
+    `;
+    document.body.appendChild(modalDiv);
+  }
+}
+
+function openRecipeModal() {
+  currentRecipeIngredients = [];
+  document.getElementById('recipeNameInput').value = '';
+  document.getElementById('recipeCookedWeightInput').value = '';
+  document.getElementById('recipeResultPhe').textContent = '0 мг Фа';
+  document.getElementById('recipeResultProt').textContent = '0.0 г белка';
+  
+  // Заполняем список ингредиентов
+  const sel = document.getElementById('recipeIngredientSelect');
+  sel.innerHTML = '<option value="">-- Выберите продукт --</option>';
+  const all = getAllProducts();
+  all.forEach((item, idx) => {
+    sel.innerHTML += `<option value="${idx}">${item.name} (${item.phe} мг Фа / 100г)</option>`;
+  });
+
+  renderRecipeIngredientsList();
+  openModal('recipeModal');
+}
+
+function addIngredientToRecipe() {
+  const sel = document.getElementById('recipeIngredientSelect');
+  const weightInput = document.getElementById('recipeIngredientWeight');
+  const idx = parseInt(sel.value);
+  const weight = parseFloat(weightInput.value) || 0;
+
+  if (isNaN(idx) || idx < 0) {
+    alert('Пожалуйста, выберите продукт');
+    return;
+  }
+  if (weight <= 0) {
+    alert('Укажите вес ингредиента в граммах');
+    return;
+  }
+
+  const all = getAllProducts();
+  const product = all[idx];
+
+  currentRecipeIngredients.push({
+    name: product.name,
+    weight: weight,
+    phe: product.phe,
+    prot: product.prot
+  });
+
+  weightInput.value = '';
+  renderRecipeIngredientsList();
+  calculateRecipeTotals();
+}
+
+function removeIngredientFromRecipe(index) {
+  currentRecipeIngredients.splice(index, 1);
+  renderRecipeIngredientsList();
+  calculateRecipeTotals();
+}
+
+function renderRecipeIngredientsList() {
+  const container = document.getElementById('recipeIngredientsList');
+  if (!container) return;
+
+  if (currentRecipeIngredients.length === 0) {
+    container.innerHTML = '<div style="font-size:12px; color:#94a3b8; padding:6px 0;">Ингредиенты еще не добавлены</div>';
+    return;
+  }
+
+  let html = '';
+  currentRecipeIngredients.forEach((item, i) => {
+    const itemPhe = Math.round((item.weight * item.phe) / 100);
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #e2e8f0; padding:6px 8px; border-radius:8px; margin-bottom:4px; font-size:12px;">
+        <div><b>${item.name}</b> — ${item.weight} г <span style="color:#64748b;">(${itemPhe} мг Фа)</span></div>
+        <button onclick="removeIngredientFromRecipe(${i})" style="background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;">✕</button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function calculateRecipeTotals() {
+  let totalRawPhe = 0;
+  let totalRawProt = 0;
+  let totalRawWeight = 0;
+
+  currentRecipeIngredients.forEach(item => {
+    totalRawPhe += (item.weight * item.phe) / 100;
+    totalRawProt += (item.weight * item.prot) / 100;
+    totalRawWeight += item.weight;
+  });
+
+  let cookedWeight = parseFloat(document.getElementById('recipeCookedWeightInput').value) || totalRawWeight;
+  if (cookedWeight <= 0) cookedWeight = totalRawWeight;
+
+  if (cookedWeight > 0) {
+    const phePer100 = Math.round((totalRawPhe / cookedWeight) * 100);
+    const protPer100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
+
+    document.getElementById('recipeResultPhe').textContent = phePer100 + ' мг Фа';
+    document.getElementById('recipeResultProt').textContent = protPer100 + ' г белка';
+  }
+}
+
+function saveRecipeToProducts() {
+  const name = document.getElementById('recipeNameInput').value.trim();
+  if (!name) {
+    alert('Введите название рецепта');
+    return;
+  }
+  if (currentRecipeIngredients.length === 0) {
+    alert('Добавьте хотя бы один ингредиент');
+    return;
+  }
+
+  let totalRawPhe = 0;
+  let totalRawProt = 0;
+  let totalRawWeight = 0;
+
+  currentRecipeIngredients.forEach(item => {
+    totalRawPhe += (item.weight * item.phe) / 100;
+    totalRawProt += (item.weight * item.prot) / 100;
+    totalRawWeight += item.weight;
+  });
+
+  let cookedWeight = parseFloat(document.getElementById('recipeCookedWeightInput').value) || totalRawWeight;
+  const finalPhe100 = Math.round((totalRawPhe / cookedWeight) * 100);
+  const finalProt100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
+
+  userCustomProducts.push({
+    name: '🍲 ' + name,
+    phe: finalPhe100,
+    prot: finalProt100
+  });
+
+  localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
+  alert('Рецепт "' + name + '" успешно сохранен в вашу базу!');
+  closeModal('recipeModal');
+  filterFoodList();
 }
 
 function setCategory(cat, btn) {
@@ -190,25 +403,8 @@ function selectFoodByIndex(i) {
   calcPreview();
 }
 
-// Сохранить текущий введенный продукт в постоянную личную базу
-function saveToMyProducts() {
-  const name = document.getElementById('foodNameInput').value.trim();
-  const phe100 = parseFloat(document.getElementById('phe100Input').value) || 0;
-  const prot100 = parseFloat(document.getElementById('prot100Input').value) || 0;
-
-  if (!name) {
-    alert('Сначала введите название продукта');
-    return;
-  }
-
-  userCustomProducts.push({ name: name, phe: phe100, prot: prot100 });
-  localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
-  alert('Продукт "' + name + '" сохранен в ваш список (⭐ Мои продукты)!');
-  filterFoodList();
-}
-
 function deleteCustomProduct(index) {
-  if (confirm('Удалить этот продукт из вашей личной базы?')) {
+  if (confirm('Удалить этот продукт/рецепт из вашей личной базы?')) {
     userCustomProducts.splice(index, 1);
     localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
     filterFoodList();
