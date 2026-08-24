@@ -4,17 +4,31 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ФКУ Дневник</title>
+  
   <link rel="stylesheet" href="styles.css">
+  
+  <!-- Защитная диагностика и мост функций для модулей -->
   <script>
     window.onerror = function(msg, url, line) {
       const b = document.getElementById('debugErrorBox');
       if (b) { b.style.display = 'block'; b.textContent = 'Ошибка: ' + msg + ' (' + line + ')'; }
       return false;
     };
+
+    // Защитные функции-мосты (предотвращают ReferenceError до загрузки app.js)
+    window.switchView = function(v) { if (window._realSwitchView) window._realSwitchView(v); };
+    window.openRecipeModal = function() { if (window._realOpenRecipeModal) window._realOpenRecipeModal(); };
+    window.openAddFoodModal = function(m) { if (window._realOpenAddFoodModal) window._realOpenAddFoodModal(m); };
+    window.changeDate = function(d) { if (window._realChangeDate) window._realChangeDate(d); };
+    window.openDatePicker = function() { if (window._realOpenDatePicker) window._realOpenDatePicker(); };
+    window.openModal = function(id) { const el = document.getElementById(id); if (el) el.classList.add('active'); };
+    window.closeModal = function(id) { const el = document.getElementById(id); if (el) el.classList.remove('active'); };
   </script>
+  
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="config.js"></script>
   <script src="products.js"></script>
+  <script src="app.js"></script>
 </head>
 <body>
 
@@ -113,7 +127,6 @@
         <button class="btn-primary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="openRecipeModal()">+ Создать</button>
       </div>
 
-      <!-- Фильтры: Все рецепты / Мои -->
       <div class="category-chips" style="margin-top: 10px; margin-bottom: 0;">
         <button id="tabAllRecipes" class="chip active" onclick="switchRecipeTab('all')">🌍 Все рецепты</button>
         <button id="tabMyRecipes" class="chip" onclick="switchRecipeTab('my')">⭐ Только мои</button>
@@ -125,7 +138,7 @@
     </div>
   </div>
 
-  <!-- СОВРЕМЕННАЯ СТРОГО ОЦЕНТРИРОВАННАЯ НАВИГАЦИОННАЯ ПАНЕЛЬ -->
+  <!-- СОВРЕМЕННАЯ НАВИГАЦИОННАЯ ПАНЕЛЬ С ВЫНЕСЕННОЙ КНОПКОЙ -->
   <nav class="bottom-nav">
     <!-- 1. Конструктор рецептов -->
     <button class="nav-item" id="navBtnConstructor" onclick="openRecipeModal()">
@@ -135,7 +148,7 @@
       <span>Конструктор</span>
     </button>
 
-    <!-- 2. Дневник (Главная круглая выходящая кнопка) -->
+    <!-- 2. Дневник (Главная круглая кнопка) -->
     <div class="nav-center-wrap" onclick="switchView('diary')">
       <div class="nav-fab-btn" id="navFabBtn">
         <svg viewBox="0 0 24 24">
@@ -248,7 +261,6 @@
         <span style="font-size:10px; color:#64748b; display:block; margin-top:2px;">Взвесьте блюдо после приготовления</span>
       </div>
 
-      <!-- Расчет на 100г -->
       <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:12px; border-radius:12px; margin-bottom:12px;">
         <div style="font-size:11px; color:#065f46; font-weight:600;">РАСЧЕТ НА 100 Г ГОТОВОГО БЛЮДА:</div>
         <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
@@ -315,6 +327,5 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
 </body>
 </html>
