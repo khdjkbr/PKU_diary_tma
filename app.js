@@ -1,4 +1,4 @@
-// app.js — Логика приложения ФКУ Дневник
+// app.js — Логика приложения ФКУ Дневник (с поддержкой личных продуктов)
 
 let DB_URL = '';
 let DB_KEY = '';
@@ -15,7 +15,10 @@ if (tg) {
 const tgUser = tg?.initDataUnsafe?.user || { id: 99999999, first_name: "Пользователь" };
 const currentTelegramId = tgUser.id;
 
-let currentFilteredList = (typeof FOOD_BASE !== 'undefined') ? [...FOOD_BASE] : [];
+// Личные продукты пользователя
+let userCustomProducts = [];
+
+let currentFilteredList = [];
 let currentDateObj = new Date();
 let currentCategory = 'all';
 
@@ -33,6 +36,13 @@ function getFormattedDate(d) {
   const month = String(d.getMonth() + 1).padStart(2, '0');
   const day = String(d.getDate()).padStart(2, '0');
   return year + '-' + month + '-' + day;
+}
+
+// Объединенный список (общая база + личные продукты)
+function getAllProducts() {
+  const base = (typeof FOOD_BASE !== 'undefined') ? FOOD_BASE : [];
+  const custom = userCustomProducts.map((p, idx) => ({ ...p, cat: 'custom', isCustom: true, customIndex: idx }));
+  return [...custom, ...base];
 }
 
 function updateDateUI() {
@@ -100,10 +110,32 @@ function init() {
       try { appData.settings = JSON.parse(savedSettings); } catch(e){}
     }
 
+    // Загрузка личных продуктов из локальной памяти
+    const savedCustom = localStorage.getItem('pku_custom_products_' + currentTelegramId);
+    if (savedCustom) {
+      try { userCustomProducts = JSON.parse(savedCustom); } catch(e){}
+    }
+
+    // Добавляем кнопку категории "Мои продукты", если ее еще нет
+    setupCustomCategoryChip();
+
     filterFoodList();
     updateDateUI();
   } catch(e){
     console.error('init error:', e);
+  }
+}
+
+function setupCustomCategoryChip() {
+  const chipContainer = document.querySelector('.category-chips');
+  if (chipContainer && !document.getElementById('customChipBtn')) {
+    const btn = document.createElement('button');
+    btn.id = 'customChipBtn';
+    btn.className = 'chip';
+    btn.textContent = '⭐ Мои продукты';
+    btn.onclick = function() { setCategory('custom', this); };
+    // Вставляем после кнопки "Все"
+    chipContainer.insertBefore(btn, chipContainer.children[1]);
   }
 }
 
@@ -116,8 +148,8 @@ function setCategory(cat, btn) {
 
 function filterFoodList() {
   const query = (document.getElementById('foodSearchInput')?.value || '').toLowerCase().trim();
-  const source = (typeof FOOD_BASE !== 'undefined') ? FOOD_BASE : [];
-  currentFilteredList = source.filter(item => {
+  const all = getAllProducts();
+  currentFilteredList = all.filter(item => {
     const matchesCat = (currentCategory === 'all' || item.cat === currentCategory);
     const matchesQuery = !query || item.name.toLowerCase().includes(query);
     return matchesCat && matchesQuery;
@@ -137,9 +169,13 @@ function renderFoodSearchList() {
   let html = '';
   for (let i = 0; i < currentFilteredList.length; i++) {
     const f = currentFilteredList[i];
+    const icon = f.isCustom ? '⭐ ' : '';
     html += '<div class="search-item" onclick="selectFoodByIndex(' + i + ')">' +
-              '<div class="search-item-name">' + f.name + '</div>' +
-              '<div class="search-item-meta">' + f.phe + ' мг Фа <span style="color:#64748b; font-weight:normal;">(' + f.prot + 'г б.)</span></div>' +
+              '<div class="search-item-name">' + icon + f.name + '</div>' +
+              '<div style="display:flex; align-items:center; gap:8px;">' +
+                '<div class="search-item-meta">' + f.phe + ' мг Фа <span style="color:#64748b; font-weight:normal;">(' + f.prot + 'г б.)</span></div>' +
+                (f.isCustom ? '<button onclick="event.stopPropagation(); deleteCustomProduct(' + f.customIndex + ')" style="border:none; background:none; color:#ef4444; font-size:13px; cursor:pointer; padding:2px;">✕</button>' : '') +
+              '</div>' +
             '</div>';
   }
   container.innerHTML = html;
@@ -152,6 +188,31 @@ function selectFoodByIndex(i) {
   document.getElementById('phe100Input').value = item.phe;
   document.getElementById('prot100Input').value = item.prot;
   calcPreview();
+}
+
+// Сохранить текущий введенный продукт в постоянную личную базу
+function saveToMyProducts() {
+  const name = document.getElementById('foodNameInput').value.trim();
+  const phe100 = parseFloat(document.getElementById('phe100Input').value) || 0;
+  const prot100 = parseFloat(document.getElementById('prot100Input').value) || 0;
+
+  if (!name) {
+    alert('Сначала введите название продукта');
+    return;
+  }
+
+  userCustomProducts.push({ name: name, phe: phe100, prot: prot100 });
+  localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
+  alert('Продукт "' + name + '" сохранен в ваш список (⭐ Мои продукты)!');
+  filterFoodList();
+}
+
+function deleteCustomProduct(index) {
+  if (confirm('Удалить этот продукт из вашей личной базы?')) {
+    userCustomProducts.splice(index, 1);
+    localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
+    filterFoodList();
+  }
 }
 
 async function syncWithSupabase() {
