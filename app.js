@@ -63,6 +63,7 @@ function switchView(viewName) {
     loadRecipesFromSupabase();
   }
 }
+window._realSwitchView = switchView;
 window.switchView = switchView;
 
 function getAllProducts() {
@@ -96,6 +97,7 @@ function changeDate(daysOffset) {
   currentDateObj.setDate(currentDateObj.getDate() + daysOffset);
   updateDateUI();
 }
+window._realChangeDate = changeDate;
 window.changeDate = changeDate;
 
 function openDatePicker() {
@@ -105,6 +107,7 @@ function openDatePicker() {
     else picker.click();
   }
 }
+window._realOpenDatePicker = openDatePicker;
 window.openDatePicker = openDatePicker;
 
 function onDatePicked(val) {
@@ -277,4 +280,414 @@ function openQuickAddRecipe(idx) {
   selectedRecipeForQuickAdd = allRecipes[idx];
   if (!selectedRecipeForQuickAdd) return;
 
-  const titleEl = document.getElementById('quickRecipeTitle
+  const titleEl = document.getElementById('quickRecipeTitle');
+  if (titleEl) titleEl.textContent = `Добавить "${selectedRecipeForQuickAdd.title}"`;
+  
+  const wEl = document.getElementById('quickRecipeWeight');
+  if (wEl) wEl.value = '100';
+  
+  calcQuickRecipePreview();
+  openModal('quickAddRecipeModal');
+}
+window.openQuickAddRecipe = openQuickAddRecipe;
+
+function calcQuickRecipePreview() {
+  if (!selectedRecipeForQuickAdd) return;
+  const wEl = document.getElementById('quickRecipeWeight');
+  const w = wEl ? parseFloat(wEl.value) || 0 : 0;
+  const phe = Math.round((w * selectedRecipeForQuickAdd.phe_per_100) / 100);
+  const prot = parseFloat(((w * selectedRecipeForQuickAdd.prot_per_100) / 100).toFixed(2));
+  
+  const prev = document.getElementById('quickRecipePreviewCalc');
+  if (prev) prev.textContent = `${phe} мг Фа (${prot} г б.)`;
+}
+window.calcQuickRecipePreview = calcQuickRecipePreview;
+
+function confirmQuickAddRecipe() {
+  if (!selectedRecipeForQuickAdd) return;
+  const meal = document.getElementById('quickRecipeMealSelect')?.value || 'Обед';
+  const wEl = document.getElementById('quickRecipeWeight');
+  const w = wEl ? parseFloat(wEl.value) || 0 : 0;
+
+  if (w <= 0) {
+    alert('Укажите вес съеденной порции');
+    return;
+  }
+
+  const phe = Math.round((w * selectedRecipeForQuickAdd.phe_per_100) / 100);
+  const prot = parseFloat(((w * selectedRecipeForQuickAdd.prot_per_100) / 100).toFixed(2));
+
+  appData.entries.push({
+    id: Date.now(),
+    meal: meal,
+    name: '🍲 ' + selectedRecipeForQuickAdd.title,
+    weight: w,
+    phe: phe,
+    prot: prot
+  });
+
+  saveLocal();
+  closeModal('quickAddRecipeModal');
+  switchView('diary');
+  alert(`Блюдо "${selectedRecipeForQuickAdd.title}" (${w}г) добавлено в ${meal}!`);
+}
+window.confirmQuickAddRecipe = confirmQuickAddRecipe;
+
+function openRecipeModal() {
+  currentRecipeIngredients = [];
+  const nameEl = document.getElementById('recipeNameInput');
+  if (nameEl) nameEl.value = '';
+  
+  const wCooked = document.getElementById('recipeCookedWeightInput');
+  if (wCooked) wCooked.value = '';
+  
+  const resPhe = document.getElementById('recipeResultPhe');
+  if (resPhe) resPhe.textContent = '0 мг Фа';
+  
+  const resProt = document.getElementById('recipeResultProt');
+  if (resProt) resProt.textContent = '0.0 г белка';
+  
+  const checkPub = document.getElementById('recipeIsPublicCheck');
+  if (checkPub) checkPub.checked = true;
+
+  const sel = document.getElementById('recipeIngredientSelect');
+  if (sel) {
+    sel.innerHTML = '<option value="">-- Выберите продукт из базы --</option>';
+    const all = getAllProducts();
+    all.forEach((item, idx) => {
+      sel.innerHTML += `<option value="${idx}">${item.name} (${item.phe} мг Фа / 100г)</option>`;
+    });
+  }
+
+  renderRecipeIngredientsList();
+  openModal('recipeModal');
+}
+window._realOpenRecipeModal = openRecipeModal;
+window.openRecipeModal = openRecipeModal;
+
+function addIngredientToRecipe() {
+  const sel = document.getElementById('recipeIngredientSelect');
+  const weightInput = document.getElementById('recipeIngredientWeight');
+  const idx = parseInt(sel?.value);
+  const weight = parseFloat(weightInput?.value) || 0;
+
+  if (isNaN(idx) || idx < 0) {
+    alert('Пожалуйста, выберите продукт');
+    return;
+  }
+  if (weight <= 0) {
+    alert('Укажите вес ингредиента в граммах');
+    return;
+  }
+
+  const all = getAllProducts();
+  const product = all[idx];
+
+  currentRecipeIngredients.push({
+    name: product.name,
+    weight: weight,
+    phe: product.phe,
+    prot: product.prot
+  });
+
+  if (weightInput) weightInput.value = '';
+  renderRecipeIngredientsList();
+  calculateRecipeTotals();
+}
+window.addIngredientToRecipe = addIngredientToRecipe;
+
+function removeIngredientFromRecipe(index) {
+  currentRecipeIngredients.splice(index, 1);
+  renderRecipeIngredientsList();
+  calculateRecipeTotals();
+}
+window.removeIngredientFromRecipe = removeIngredientFromRecipe;
+
+function renderRecipeIngredientsList() {
+  const container = document.getElementById('recipeIngredientsList');
+  if (!container) return;
+
+  if (currentRecipeIngredients.length === 0) {
+    container.innerHTML = '<div style="font-size:12px; color:#94a3b8; padding:6px 0;">Ингредиенты еще не добавлены</div>';
+    return;
+  }
+
+  let html = '';
+  currentRecipeIngredients.forEach((item, i) => {
+    const itemPhe = Math.round((item.weight * item.phe) / 100);
+    html += `
+      <div style="display:flex; justify-content:space-between; align-items:center; background:#fff; border:1px solid #e2e8f0; padding:6px 8px; border-radius:8px; margin-bottom:4px; font-size:12px;">
+        <div><b>${item.name}</b> — ${item.weight} г <span style="color:#64748b;">(${itemPhe} мг Фа)</span></div>
+        <button onclick="removeIngredientFromRecipe(${i})" style="background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;">✕</button>
+      </div>
+    `;
+  });
+  container.innerHTML = html;
+}
+
+function calculateRecipeTotals() {
+  let totalRawPhe = 0;
+  let totalRawProt = 0;
+  let totalRawWeight = 0;
+
+  currentRecipeIngredients.forEach(item => {
+    totalRawPhe += (item.weight * item.phe) / 100;
+    totalRawProt += (item.weight * item.prot) / 100;
+    totalRawWeight += item.weight;
+  });
+
+  const wCookedEl = document.getElementById('recipeCookedWeightInput');
+  let cookedWeight = parseFloat(wCookedEl?.value) || totalRawWeight;
+  if (cookedWeight <= 0) cookedWeight = totalRawWeight;
+
+  if (cookedWeight > 0) {
+    const phePer100 = Math.round((totalRawPhe / cookedWeight) * 100);
+    const protPer100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
+
+    const resPhe = document.getElementById('recipeResultPhe');
+    if (resPhe) resPhe.textContent = phePer100 + ' мг Фа';
+    
+    const resProt = document.getElementById('recipeResultProt');
+    if (resProt) resProt.textContent = protPer100 + ' г белка';
+  }
+}
+window.calculateRecipeTotals = calculateRecipeTotals;
+
+async function saveRecipe() {
+  const name = document.getElementById('recipeNameInput')?.value.trim();
+  const isPublic = document.getElementById('recipeIsPublicCheck')?.checked || false;
+
+  if (!name) {
+    alert('Введите название рецепта');
+    return;
+  }
+  if (currentRecipeIngredients.length === 0) {
+    alert('Добавьте хотя бы один ингредиент');
+    return;
+  }
+
+  let totalRawPhe = 0;
+  let totalRawProt = 0;
+  let totalRawWeight = 0;
+
+  currentRecipeIngredients.forEach(item => {
+    totalRawPhe += (item.weight * item.phe) / 100;
+    totalRawProt += (item.weight * item.prot) / 100;
+    totalRawWeight += item.weight;
+  });
+
+  const wCookedEl = document.getElementById('recipeCookedWeightInput');
+  let cookedWeight = parseFloat(wCookedEl?.value) || totalRawWeight;
+  const finalPhe100 = Math.round((totalRawPhe / cookedWeight) * 100);
+  const finalProt100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
+
+  const newRecipe = {
+    id: Date.now(),
+    telegram_id: currentTelegramId,
+    author_name: tgUser.first_name || 'Пользователь',
+    title: name,
+    ingredients: currentRecipeIngredients,
+    cooked_weight: cookedWeight,
+    phe_per_100: finalPhe100,
+    prot_per_100: finalProt100,
+    is_public: isPublic
+  };
+
+  allRecipes.unshift(newRecipe);
+  localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+
+  if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
+    try {
+      const res = await fetch(DB_URL + '/rest/v1/recipes', {
+        method: 'POST',
+        headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify(newRecipe)
+      });
+      const data = await res.json();
+      if (data && data.length > 0) newRecipe.id = data[0].id;
+    } catch(e){}
+  }
+
+  alert('Рецепт успешно сохранен!');
+  closeModal('recipeModal');
+  switchView('recipes');
+}
+window.saveRecipe = saveRecipe;
+
+async function toggleRecipePublic(idx) {
+  const r = allRecipes[idx];
+  if (!r) return;
+  r.is_public = !r.is_public;
+  localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+  renderRecipes();
+
+  if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
+    try {
+      await fetch(DB_URL + '/rest/v1/recipes?id=eq.' + r.id, {
+        method: 'PATCH',
+        headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_public: r.is_public })
+      });
+    } catch(e){}
+  }
+}
+window.toggleRecipePublic = toggleRecipePublic;
+
+async function deleteRecipe(idx) {
+  if (confirm('Удалить этот рецепт?')) {
+    const r = allRecipes[idx];
+    allRecipes.splice(idx, 1);
+    localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+    renderRecipes();
+
+    if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ') && r?.id) {
+      try {
+        await fetch(DB_URL + '/rest/v1/recipes?id=eq.' + r.id, {
+          method: 'DELETE',
+          headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY }
+        });
+      } catch(e){}
+    }
+  }
+}
+window.deleteRecipe = deleteRecipe;
+
+async function loadRecipesFromSupabase() {
+  if (!DB_URL.startsWith('http') || DB_URL.includes('ВАШ_ПРОЕКТ')) return;
+  try {
+    const headers = { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY };
+    const res = await fetch(DB_URL + '/rest/v1/recipes?or=(is_public.eq.true,telegram_id.eq.' + currentTelegramId + ')&order=created_at.desc', { headers });
+    const data = await res.json();
+    if (data && Array.isArray(data)) {
+      allRecipes = data;
+      localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+      renderRecipes();
+    }
+  } catch(e){}
+}
+
+// 3. ДНЕВНИК И ПРОДУКТЫ
+function setCategory(cat, btn) {
+  currentCategory = cat;
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  if (btn && btn.classList) btn.classList.add('active');
+  filterFoodList();
+}
+window.setCategory = setCategory;
+
+function filterFoodList() {
+  const query = (document.getElementById('foodSearchInput')?.value || '').toLowerCase().trim();
+  const all = getAllProducts();
+  currentFilteredList = all.filter(item => {
+    const matchesCat = (currentCategory === 'all' || item.cat === currentCategory);
+    const matchesQuery = !query || item.name.toLowerCase().includes(query);
+    return matchesCat && matchesQuery;
+  });
+  renderFoodSearchList();
+}
+window.filterFoodList = filterFoodList;
+
+function renderFoodSearchList() {
+  const container = document.getElementById('foodSearchListContainer');
+  if (!container) return;
+
+  if (currentFilteredList.length === 0) {
+    container.innerHTML = '<div style="padding:12px; text-align:center; font-size:12px; color:#94a3b8;">Ничего не найдено</div>';
+    return;
+  }
+
+  let html = '';
+  for (let i = 0; i < currentFilteredList.length; i++) {
+    const f = currentFilteredList[i];
+    const icon = f.isCustom ? '⭐ ' : '';
+    html += '<div class="search-item" onclick="selectFoodByIndex(' + i + ')">' +
+              '<div class="search-item-name">' + icon + f.name + '</div>' +
+              '<div style="display:flex; align-items:center; gap:8px;">' +
+                '<div class="search-item-meta">' + f.phe + ' мг Фа <span style="color:#64748b; font-weight:normal;">(' + f.prot + 'г б.)</span></div>' +
+              '</div>' +
+            '</div>';
+  }
+  container.innerHTML = html;
+}
+
+function selectFoodByIndex(i) {
+  const item = currentFilteredList[i];
+  if (!item) return;
+  const nameEl = document.getElementById('foodNameInput');
+  if (nameEl) nameEl.value = item.name;
+  
+  const pheEl = document.getElementById('phe100Input');
+  if (pheEl) pheEl.value = item.phe;
+  
+  const protEl = document.getElementById('prot100Input');
+  if (protEl) protEl.value = item.prot;
+  
+  calcPreview();
+}
+window.selectFoodByIndex = selectFoodByIndex;
+
+async function syncWithSupabase() {
+  if (!DB_URL.startsWith('http') || DB_URL.includes('ВАШ_ПРОЕКТ')) return;
+  try {
+    const headers = { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY };
+    
+    const resUser = await fetch(DB_URL + '/rest/v1/users?telegram_id=eq.' + currentTelegramId, { headers });
+    const users = await resUser.json();
+    if (users && users.length > 0) {
+      appData.settings.dailyPhe = users[0].daily_phe || 300;
+      appData.settings.aksPortions = users[0].aks_portions || 4;
+    }
+
+    const resEntries = await fetch(DB_URL + '/rest/v1/diary_entries?telegram_id=eq.' + currentTelegramId + '&entry_date=eq.' + appData.today, { headers });
+    const entries = await resEntries.json();
+    if (entries && Array.isArray(entries)) {
+      appData.entries = entries.map(e => ({
+        id: e.id,
+        meal: e.meal_type,
+        name: e.food_name,
+        weight: Number(e.weight_g),
+        phe: Number(e.phe_mg),
+        prot: Number(e.protein_g)
+      }));
+    }
+
+    const resAks = await fetch(DB_URL + '/rest/v1/aks_logs?telegram_id=eq.' + currentTelegramId + '&log_date=eq.' + appData.today, { headers });
+    const aksLogs = await resAks.json();
+    if (aksLogs && Array.isArray(aksLogs)) {
+      appData.aks = new Array(appData.settings.aksPortions).fill(false);
+      aksLogs.forEach(log => {
+        if (log.portion_index < appData.aks.length) {
+          appData.aks[log.portion_index] = log.is_taken;
+        }
+      });
+    }
+
+    render();
+    saveLocal();
+  } catch(e) {
+    console.log("Supabase sync:", e);
+  }
+}
+
+function saveLocal() {
+  localStorage.setItem('pku_diary_' + currentTelegramId + '_' + appData.today, JSON.stringify({
+    entries: appData.entries,
+    aks: appData.aks
+  }));
+  localStorage.setItem('pku_settings_' + currentTelegramId, JSON.stringify(appData.settings));
+}
+
+function render() {
+  try {
+    const limitPhe = appData.settings.dailyPhe;
+    const limitProt = (limitPhe / 50).toFixed(1);
+    
+    const limitPheEl = document.getElementById('limitPheText');
+    if (limitPheEl) limitPheEl.textContent = limitPhe;
+    
+    const limitProtEl = document.getElementById('limitProteinText');
+    if (limitProtEl) limitProtEl.textContent = limitProt;
+
+    let consumedPhe = 0;
+    let consumedProt = 0;
+    const
