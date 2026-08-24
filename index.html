@@ -5,14 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ФКУ Дневник</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Подключение файла с ключами -->
+  <script src="config.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: #f8fafc; color: #0f172a; padding-bottom: 90px; }
-    .header { background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 20; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
-    .header-title { font-size: 17px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; }
-    .header-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-    .icon-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; }
     
+    .header { background: #fff; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 20; padding: 10px 14px; }
+    .header-top { display: flex; justify-content: space-between; align-items: center; }
+    .header-title { font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+    .icon-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; font-size: 14px; }
+    
+    /* Навигация по датам */
+    .date-nav { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 8px; margin-top: 8px; }
+    .date-btn { background: none; border: none; font-size: 14px; color: #475569; padding: 4px 8px; cursor: pointer; border-radius: 8px; }
+    .date-btn:active { background: #e2e8f0; }
+    .date-display { font-size: 12px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 4px; cursor: pointer; position: relative; }
+    .today-tag { font-size: 10px; background: #10b981; color: #fff; padding: 1px 6px; border-radius: 10px; margin-left: 4px; }
+    #hiddenDatePicker { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
+
     .container { max-width: 460px; margin: 0 auto; padding: 12px; display: flex; flex-direction: column; gap: 12px; }
     .card { background: #fff; border-radius: 16px; padding: 14px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.03); }
     
@@ -57,11 +68,22 @@
 
   <!-- Шапка -->
   <header class="header">
-    <div>
+    <div class="header-top">
       <div class="header-title">🥑 ФКУ Дневник</div>
-      <div class="header-sub" id="headerDate">Сегодня</div>
+      <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
     </div>
-    <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
+
+    <!-- Панель дат -->
+    <div class="date-nav">
+      <button class="date-btn" onclick="changeDate(-1)">◀ Вчера</button>
+      <div class="date-display" onclick="openDatePicker()">
+        <span>📅</span>
+        <span id="dateDisplayLabel">Сегодня</span>
+        <span id="todayBadge" class="today-tag">Сегодня</span>
+        <input type="date" id="hiddenDatePicker" onchange="onDatePicked(this.value)">
+      </div>
+      <button class="date-btn" onclick="changeDate(1)">Завтра ▶</button>
+    </div>
   </header>
 
   <div class="container">
@@ -207,13 +229,10 @@
   </div>
 
   <script>
-    // ==========================================
-    // 1. КЛЮЧИ SUPABASE
-    // ==========================================
-    const SUPABASE_URL = "https://lkvoxthapdybhyyqghfl.supabase.co";
-    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrdm94dGhhcGR5Ymh5eXFnaGZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTQwOTUsImV4cCI6MjEwMzE3MDA5NX0.-Sh-ir0g27jpyDzC4yTsemOw2eoVue6sRWuJo0Hwttc";
+    // Проверяем наличие ключей из config.js
+    const DB_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
+    const DB_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
 
-    // Telegram
     const tg = window.Telegram?.WebApp;
     if (tg) { tg.ready(); tg.expand(); }
 
@@ -236,65 +255,101 @@
       { name: "Саго крупа", phe: 12, prot: 0.3 }
     ];
 
+    let currentDateObj = new Date();
+
     let appData = {
       settings: { dailyPhe: 300, aksPortions: 4 },
-      today: new Date().toISOString().split('T')[0],
+      today: getFormattedDate(currentDateObj),
       aks: [false, false, false, false],
       entries: []
     };
 
     let activeMeal = 'Завтрак';
 
-    // Загрузка
-    function init() {
-      const todayStr = new Date().toISOString().split('T')[0];
-      document.getElementById('headerDate').textContent = new Date().toLocaleDateString('ru-RU', { weekday:'short', day:'numeric', month:'short' });
+    function getFormattedDate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
 
-      // Локальные данные
-      const local = localStorage.getItem('pku_diary_' + currentTelegramId);
+    function updateDateUI() {
+      const selectedStr = getFormattedDate(currentDateObj);
+      const actualTodayStr = getFormattedDate(new Date());
+      appData.today = selectedStr;
+
+      const isToday = (selectedStr === actualTodayStr);
+      document.getElementById('todayBadge').style.display = isToday ? 'inline-block' : 'none';
+
+      const options = { day: 'numeric', month: 'short' };
+      document.getElementById('dateDisplayLabel').textContent = currentDateObj.toLocaleDateString('ru-RU', options);
+      document.getElementById('hiddenDatePicker').value = selectedStr;
+
+      loadDayData();
+    }
+
+    function changeDate(daysOffset) {
+      currentDateObj.setDate(currentDateObj.getDate() + daysOffset);
+      updateDateUI();
+    }
+
+    function openDatePicker() {
+      const picker = document.getElementById('hiddenDatePicker');
+      if (picker) picker.showPicker ? picker.showPicker() : picker.click();
+    }
+
+    function onDatePicked(val) {
+      if (!val) return;
+      const parts = val.split('-');
+      currentDateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+      updateDateUI();
+    }
+
+    function loadDayData() {
+      const local = localStorage.getItem(`pku_diary_${currentTelegramId}_${appData.today}`);
       if (local) {
         try {
           const parsed = JSON.parse(local);
-          if (parsed.today === todayStr) {
-            appData = parsed;
-          }
+          appData.entries = parsed.entries || [];
+          appData.aks = parsed.aks || new Array(appData.settings.aksPortions).fill(false);
         } catch(e){}
+      } else {
+        appData.entries = [];
+        appData.aks = new Array(appData.settings.aksPortions).fill(false);
       }
 
-      // Заполняем селект продуктов
+      render();
+      syncWithSupabase();
+    }
+
+    function init() {
+      const savedSettings = localStorage.getItem(`pku_settings_${currentTelegramId}`);
+      if (savedSettings) {
+        try { appData.settings = JSON.parse(savedSettings); } catch(e){}
+      }
+
       const sel = document.getElementById('foodSelect');
       sel.innerHTML = '<option value="custom">-- Ручной ввод / Свой продукт --</option>';
       FOOD_BASE.forEach((item, i) => {
         sel.innerHTML += `<option value="${i}">${item.name} (${item.phe} мг Фа / 100г)</option>`;
       });
 
-      render();
-      syncWithSupabase();
+      updateDateUI();
     }
 
-    // Supabase прямой REST
     async function syncWithSupabase() {
-      if (!SUPABASE_URL.startsWith('http') || SUPABASE_URL.includes('ВАШ_ПРОЕКТ')) return;
+      if (!DB_URL.startsWith('http') || DB_URL.includes('ВАШ_ПРОЕКТ')) return;
       try {
-        const headers = { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY };
+        const headers = { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY };
         
-        // Читаем настройки
-        const resUser = await fetch(`${SUPABASE_URL}/rest/v1/users?telegram_id=eq.${currentTelegramId}`, { headers });
+        const resUser = await fetch(`${DB_URL}/rest/v1/users?telegram_id=eq.${currentTelegramId}`, { headers });
         const users = await resUser.json();
         if (users && users.length > 0) {
           appData.settings.dailyPhe = users[0].daily_phe || 300;
           appData.settings.aksPortions = users[0].aks_portions || 4;
-        } else {
-          // Создаем пользователя
-          await fetch(`${SUPABASE_URL}/rest/v1/users`, {
-            method: 'POST',
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegram_id: currentTelegramId, first_name: tgUser.first_name || '', daily_phe: 300, aks_portions: 4 })
-          });
         }
 
-        // Читаем записи
-        const resEntries = await fetch(`${SUPABASE_URL}/rest/v1/diary_entries?telegram_id=eq.${currentTelegramId}&entry_date=eq.${appData.today}`, { headers });
+        const resEntries = await fetch(`${DB_URL}/rest/v1/diary_entries?telegram_id=eq.${currentTelegramId}&entry_date=eq.${appData.today}`, { headers });
         const entries = await resEntries.json();
         if (entries && Array.isArray(entries)) {
           appData.entries = entries.map(e => ({
@@ -307,11 +362,30 @@
           }));
         }
 
+        const resAks = await fetch(`${DB_URL}/rest/v1/aks_logs?telegram_id=eq.${currentTelegramId}&log_date=eq.${appData.today}`, { headers });
+        const aksLogs = await resAks.json();
+        if (aksLogs && Array.isArray(aksLogs)) {
+          appData.aks = new Array(appData.settings.aksPortions).fill(false);
+          aksLogs.forEach(log => {
+            if (log.portion_index < appData.aks.length) {
+              appData.aks[log.portion_index] = log.is_taken;
+            }
+          });
+        }
+
         render();
-        localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
+        saveLocal();
       } catch(e) {
         console.log("Supabase sync:", e);
       }
+    }
+
+    function saveLocal() {
+      localStorage.setItem(`pku_diary_${currentTelegramId}_${appData.today}`, JSON.stringify({
+        entries: appData.entries,
+        aks: appData.aks
+      }));
+      localStorage.setItem(`pku_settings_${currentTelegramId}`, JSON.stringify(appData.settings));
     }
 
     function render() {
@@ -371,7 +445,6 @@
         bar.className = 'progress-bar-fill fill-warn';
       }
 
-      // АКС
       const aksDiv = document.getElementById('aksContainer');
       aksDiv.innerHTML = '';
       let takenCnt = 0;
@@ -433,16 +506,15 @@
       const tempId = Date.now();
 
       appData.entries.push({ id: tempId, meal: activeMeal, name: name, weight: w, phe: totalPhe, prot: totalProt });
-      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
+      saveLocal();
       render();
       closeModal('addModal');
 
-      // Сохранение в Supabase
-      if (SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('ВАШ_ПРОЕКТ')) {
+      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/diary_entries`, {
+          await fetch(`${DB_URL}/rest/v1/diary_entries`, {
             method: 'POST',
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({ telegram_id: currentTelegramId, entry_date: appData.today, meal_type: activeMeal, food_name: name, weight_g: w, phe_mg: totalPhe, protein_g: totalProt })
           });
         } catch(e){}
@@ -451,23 +523,33 @@
 
     async function deleteFood(id) {
       appData.entries = appData.entries.filter(e => e.id !== id);
-      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
+      saveLocal();
       render();
 
-      if (SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('ВАШ_ПРОЕКТ')) {
+      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/diary_entries?id=eq.${id}`, {
+          await fetch(`${DB_URL}/rest/v1/diary_entries?id=eq.${id}`, {
             method: 'DELETE',
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY }
+            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY }
           });
         } catch(e){}
       }
     }
 
-    function toggleAks(i) {
+    async function toggleAks(i) {
       appData.aks[i] = !appData.aks[i];
-      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
+      saveLocal();
       render();
+
+      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
+        try {
+          await fetch(`${DB_URL}/rest/v1/aks_logs`, {
+            method: 'POST',
+            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+            body: JSON.stringify({ telegram_id: currentTelegramId, log_date: appData.today, portion_index: i, is_taken: appData.aks[i] })
+          });
+        } catch(e){}
+      }
     }
 
     function openModal(id) {
@@ -490,22 +572,21 @@
         appData.settings.aksPortions = aksCount;
         appData.aks = new Array(aksCount).fill(false);
       }
-      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
+      saveLocal();
       render();
       closeModal('settingsModal');
 
-      if (SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('ВАШ_ПРОЕКТ')) {
+      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
         try {
-          await fetch(`${SUPABASE_URL}/rest/v1/users?telegram_id=eq.${currentTelegramId}`, {
+          await fetch(`${DB_URL}/rest/v1/users?telegram_id=eq.${currentTelegramId}`, {
             method: 'PATCH',
-            headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY, 'Content-Type': 'application/json' },
+            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
             body: JSON.stringify({ daily_phe: phe, aks_portions: aksCount })
           });
         } catch(e){}
       }
     }
 
-    // Старт
     init();
   </script>
 </body>
