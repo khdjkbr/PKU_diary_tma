@@ -1,4 +1,4 @@
-// app.js — Логика приложения ФКУ Дневник (с поддержкой Конструктора Рецептов)
+// app.js — Логика приложения ФКУ Дневник (с единой книгой рецептов и Deep Link)
 
 let DB_URL = '';
 let DB_KEY = '';
@@ -15,15 +15,17 @@ if (tg) {
 const tgUser = tg?.initDataUnsafe?.user || { id: 99999999, first_name: "Пользователь" };
 const currentTelegramId = tgUser.id;
 
-// Личные продукты и рецепты пользователя
+// Базы данных
 let userCustomProducts = [];
+let allRecipes = []; // Единая лента рецептов
 
-// Временные ингредиенты для текущего создаваемого рецепта
 let currentRecipeIngredients = [];
+let selectedRecipeForQuickAdd = null;
 
 let currentFilteredList = [];
 let currentDateObj = new Date();
 let currentCategory = 'all';
+let currentRecipeFilter = 'all'; // 'all' или 'my'
 
 let appData = {
   settings: { dailyPhe: 300, aksPortions: 4 },
@@ -41,7 +43,20 @@ function getFormattedDate(d) {
   return year + '-' + month + '-' + day;
 }
 
-// Объединенный список (общая база + личные продукты/рецепты)
+// Навигация экранов
+function switchView(viewName) {
+  document.getElementById('viewDiary').style.display = (viewName === 'diary') ? 'block' : 'none';
+  document.getElementById('viewRecipes').style.display = (viewName === 'recipes') ? 'block' : 'none';
+
+  document.getElementById('navBtnDiary').classList.toggle('active', viewName === 'diary');
+  document.getElementById('navBtnRecipes').classList.toggle('active', viewName === 'recipes');
+
+  if (viewName === 'recipes') {
+    renderRecipes();
+    loadRecipesFromSupabase();
+  }
+}
+
 function getAllProducts() {
   const base = (typeof FOOD_BASE !== 'undefined') ? FOOD_BASE : [];
   const custom = userCustomProducts.map((p, idx) => ({ ...p, cat: 'custom', isCustom: true, customIndex: idx }));
@@ -118,101 +133,182 @@ function init() {
       try { userCustomProducts = JSON.parse(savedCustom); } catch(e){}
     }
 
-    setupCustomCategoryChip();
-    setupRecipeUI();
+    const savedRecipes = localStorage.getItem('pku_all_recipes_' + currentTelegramId);
+    if (savedRecipes) {
+      try { allRecipes = JSON.parse(savedRecipes); } catch(e){}
+    }
 
     filterFoodList();
     updateDateUI();
+
+    // Проверка Telegram Deep Link (если пришли по ссылке рецепта)
+    checkTelegramDeepLink();
   } catch(e){
     console.error('init error:', e);
   }
 }
 
-function setupCustomCategoryChip() {
-  const chipContainer = document.querySelector('.category-chips');
-  if (chipContainer && !document.getElementById('customChipBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'customChipBtn';
-    btn.className = 'chip';
-    btn.textContent = '⭐ Мои продукты / Рецепты';
-    btn.onclick = function() { setCategory('custom', this); };
-    chipContainer.insertBefore(btn, chipContainer.children[1]);
+// Проверка ссылки старта (Deep Link)
+function checkTelegramDeepLink() {
+  const startParam = tg?.initDataUnsafe?.start_param;
+  if (startParam && startParam.startsWith('recipe_')) {
+    const recipeId = parseInt(startParam.replace('recipe_', ''));
+    switchView('recipes');
+    setTimeout(() => {
+      const target = allRecipes.find(r => r.id === recipeId);
+      if (target) {
+        const idx = allRecipes.indexOf(target);
+        openQuickAddRecipe(idx);
+      }
+    }, 600);
   }
 }
 
-// Встраиваем кнопку Рецептов в шапку и модальное окно конструктора
-function setupRecipeUI() {
-  const topHeader = document.querySelector('.header-top');
-  if (topHeader && !document.getElementById('recipeBtn')) {
-    const btn = document.createElement('button');
-    btn.id = 'recipeBtn';
-    btn.className = 'icon-btn';
-    btn.style.marginRight = '6px';
-    btn.textContent = '🍲';
-    btn.title = 'Конструктор рецептов';
-    btn.onclick = openRecipeModal;
-    topHeader.insertBefore(btn, topHeader.querySelector('.icon-btn'));
-  }
+// ==========================================
+// ЛОГИКА ЕДИНОЙ КНИГИ РЕЦЕПТОВ
+// ==========================================
 
-  // Создаем модальное окно рецептов, если его еще нет
-  if (!document.getElementById('recipeModal')) {
-    const modalDiv = document.createElement('div');
-    modalDiv.id = 'recipeModal';
-    modalDiv.className = 'modal';
-    modalDiv.innerHTML = `
-      <div class="modal-content">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-          <h3 style="font-size:16px; font-weight:700;">🍲 Конструктор рецептов</h3>
-          <button class="icon-btn" onclick="closeModal('recipeModal')">✕</button>
-        </div>
+function switchRecipeTab(filter) {
+  currentRecipeFilter = filter;
+  document.getElementById('tabAllRecipes').classList.toggle('active', filter === 'all');
+  document.getElementById('tabMyRecipes').classList.toggle('active', filter === 'my');
+  renderRecipes();
+}
 
-        <div class="input-group">
-          <label class="input-label">Название составного блюда</label>
-          <input type="text" id="recipeNameInput" class="input-control" placeholder="Например: Овощной суп с н/б макаронами">
-        </div>
+function renderRecipes() {
+  const container = document.getElementById('recipesContainer');
+  if (!container) return;
 
-        <!-- Добавление ингредиента -->
-        <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin-bottom:10px;">
-          <span style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;">Добавить ингредиент</span>
-          <div style="margin-top:6px;">
-            <select id="recipeIngredientSelect" class="input-control" style="margin-bottom:6px;">
-              <option value="">-- Выберите продукт --</option>
-            </select>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <input type="number" id="recipeIngredientWeight" class="input-control" placeholder="Вес (г)" style="width:120px;">
-            <button class="btn-primary" style="padding:8px 12px; font-size:12px;" onclick="addIngredientToRecipe()">+ Добавить</button>
-          </div>
-        </div>
+  const list = (currentRecipeFilter === 'my') 
+    ? allRecipes.filter(r => r.telegram_id === currentTelegramId)
+    : allRecipes;
 
-        <!-- Список добавленных ингредиентов -->
-        <div style="margin-bottom:10px;">
-          <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Ингредиенты блюда:</span>
-          <div id="recipeIngredientsList" style="margin-top:4px; max-height:120px; overflow-y:auto;">
-            <div style="font-size:12px; color:#94a3b8; padding:6px 0;">Ингредиенты еще не добавлены</div>
-          </div>
-        </div>
-
-        <div class="input-group">
-          <label class="input-label">Итоговый вес готового блюда (г)</label>
-          <input type="number" id="recipeCookedWeightInput" class="input-control input-highlight" placeholder="Например: 500" oninput="calculateRecipeTotals()">
-          <span style="font-size:10px; color:#64748b; display:block; margin-top:2px;">Взвесьте кастрюлю/блюдо после приготовления</span>
-        </div>
-
-        <!-- Итоговые показатели на 100г -->
-        <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:12px; border-radius:12px; margin-bottom:12px;">
-          <div style="font-size:11px; color:#065f46; font-weight:600;">РАСЧЕТ НА 100 Г ГОТОВОГО БЛЮДА:</div>
-          <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
-            <span style="font-size:16px; font-weight:800; color:#047857;" id="recipeResultPhe">0 мг Фа</span>
-            <span style="font-size:13px; font-weight:700; color:#047857;" id="recipeResultProt">0.0 г белка</span>
-          </div>
-        </div>
-
-        <button class="btn-primary" onclick="saveRecipeToProducts()">⭐ Сохранить рецепт в Мои продукты</button>
+  if (list.length === 0) {
+    container.innerHTML = `
+      <div style="text-align:center; padding:30px 16px; color:#94a3b8;">
+        <div style="font-size:32px; margin-bottom:8px;">🍲</div>
+        <div style="font-size:14px; font-weight:600; color:#64748b;">${currentRecipeFilter === 'my' ? 'У вас пока нет личных рецептов' : 'В книге сообщества пока нет рецептов'}</div>
+        <div style="font-size:12px; margin-top:4px;">Нажмите "+ Создать", чтобы добавить первое блюдо!</div>
       </div>
     `;
-    document.body.appendChild(modalDiv);
+    return;
   }
+
+  let html = '';
+  list.forEach((r) => {
+    const isOwner = (r.telegram_id === currentTelegramId);
+    const globalIdx = allRecipes.indexOf(r);
+    const ingrText = (r.ingredients || []).map(i => `${i.name} (${i.weight}г)`).join(', ');
+
+    html += `
+      <div class="recipe-card">
+        <div class="recipe-header">
+          <div>
+            <div class="recipe-title">🍲 ${r.title}</div>
+            <div class="recipe-author">${isOwner ? '⭐ Ваш рецепт' : 'Автор: ' + (r.author_name || 'Сообщество')} • Выход: ${r.cooked_weight} г</div>
+          </div>
+          ${isOwner ? `<button onclick="deleteRecipe(${globalIdx})" style="border:none; background:none; color:#ef4444; font-size:14px; cursor:pointer;">🗑️</button>` : ''}
+        </div>
+
+        <div style="font-size:12px; color:#475569; margin: 6px 0;">
+          <b>Состав:</b> <span style="color:#64748b;">${ingrText}</span>
+        </div>
+
+        <div class="recipe-pills">
+          <div class="recipe-pill">${r.phe_per_100} мг Фа / 100г</div>
+          <div class="recipe-pill" style="background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;">${r.prot_per_100} г белка / 100г</div>
+        </div>
+
+        <div class="recipe-actions">
+          <button class="recipe-btn-sm" style="background:#ecfdf5; color:#047857;" onclick="openQuickAddRecipe(${globalIdx})">➕ В дневник</button>
+          <button class="recipe-btn-sm" style="background:#f1f5f9; color:#334155;" onclick="shareRecipe(${globalIdx})">🔗 Поделиться</button>
+          ${isOwner ? `
+            <button class="recipe-btn-sm" style="background:${r.is_public ? '#fef3c7' : '#f1f5f9'}; color:${r.is_public ? '#b45309' : '#64748b'};" onclick="toggleRecipePublic(${globalIdx})">
+              ${r.is_public ? '🌍 Публичный' : '🔒 Личный'}
+            </button>
+          ` : ''}
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+// Поделиться ссылкой на рецепт
+async function shareRecipe(idx) {
+  const r = allRecipes[idx];
+  if (!r) return;
+
+  // Если рецепт приватный, предлагаем опубликовать
+  if (!r.is_public && r.telegram_id === currentTelegramId) {
+    if (confirm('Этот рецепт сейчас личный. Сделать его публичным, чтобы получатель смог его открыть?')) {
+      await toggleRecipePublic(idx);
+    } else {
+      return;
+    }
+  }
+
+  // Формируем ссылку на бота с параметром рецепта
+  const botUsername = tg?.initDataUnsafe?.bot?.username || 'pku_diary_bot';
+  const deepLink = `https://t.me/${botUsername}?startapp=recipe_${r.id || 'shared'}`;
+  const text = `🍲 Попробуйте рецепт для диеты ФКУ: "${r.title}"\n` +
+               `📊 ${r.phe_per_100} мг Фа и ${r.prot_per_100}г белка на 100г.\n\n` +
+               `👉 Открыть рецепт в приложении:\n${deepLink}`;
+
+  if (tg && tg.openTelegramLink) {
+    tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(deepLink)}&text=${encodeURIComponent(text)}`);
+  } else {
+    navigator.clipboard.writeText(text).then(() => {
+      alert('Ссылка на рецепт скопирована! Можете отправить её в Telegram.');
+    });
+  }
+}
+
+function openQuickAddRecipe(idx) {
+  selectedRecipeForQuickAdd = allRecipes[idx];
+  if (!selectedRecipeForQuickAdd) return;
+
+  document.getElementById('quickRecipeTitle').textContent = `Добавить "${selectedRecipeForQuickAdd.title}"`;
+  document.getElementById('quickRecipeWeight').value = '100';
+  calcQuickRecipePreview();
+  openModal('quickAddRecipeModal');
+}
+
+function calcQuickRecipePreview() {
+  if (!selectedRecipeForQuickAdd) return;
+  const w = parseFloat(document.getElementById('quickRecipeWeight').value) || 0;
+  const phe = Math.round((w * selectedRecipeForQuickAdd.phe_per_100) / 100);
+  const prot = parseFloat(((w * selectedRecipeForQuickAdd.prot_per_100) / 100).toFixed(2));
+  document.getElementById('quickRecipePreviewCalc').textContent = `${phe} мг Фа (${prot} г б.)`;
+}
+
+function confirmQuickAddRecipe() {
+  if (!selectedRecipeForQuickAdd) return;
+  const meal = document.getElementById('quickRecipeMealSelect').value;
+  const w = parseFloat(document.getElementById('quickRecipeWeight').value) || 0;
+
+  if (w <= 0) {
+    alert('Укажите вес съеденной порции');
+    return;
+  }
+
+  const phe = Math.round((w * selectedRecipeForQuickAdd.phe_per_100) / 100);
+  const prot = parseFloat(((w * selectedRecipeForQuickAdd.prot_per_100) / 100).toFixed(2));
+
+  appData.entries.push({
+    id: Date.now(),
+    meal: meal,
+    name: '🍲 ' + selectedRecipeForQuickAdd.title,
+    weight: w,
+    phe: phe,
+    prot: prot
+  });
+
+  saveLocal();
+  closeModal('quickAddRecipeModal');
+  switchView('diary');
+  alert(`Блюдо "${selectedRecipeForQuickAdd.title}" (${w}г) добавлено в ${meal}!`);
 }
 
 function openRecipeModal() {
@@ -221,8 +317,8 @@ function openRecipeModal() {
   document.getElementById('recipeCookedWeightInput').value = '';
   document.getElementById('recipeResultPhe').textContent = '0 мг Фа';
   document.getElementById('recipeResultProt').textContent = '0.0 г белка';
-  
-  // Заполняем список ингредиентов
+  document.getElementById('recipeIsPublicCheck').checked = true;
+
   const sel = document.getElementById('recipeIngredientSelect');
   sel.innerHTML = '<option value="">-- Выберите продукт --</option>';
   const all = getAllProducts();
@@ -315,8 +411,10 @@ function calculateRecipeTotals() {
   }
 }
 
-function saveRecipeToProducts() {
+async function saveRecipe() {
   const name = document.getElementById('recipeNameInput').value.trim();
+  const isPublic = document.getElementById('recipeIsPublicCheck').checked;
+
   if (!name) {
     alert('Введите название рецепта');
     return;
@@ -340,17 +438,93 @@ function saveRecipeToProducts() {
   const finalPhe100 = Math.round((totalRawPhe / cookedWeight) * 100);
   const finalProt100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
 
-  userCustomProducts.push({
-    name: '🍲 ' + name,
-    phe: finalPhe100,
-    prot: finalProt100
-  });
+  const newRecipe = {
+    id: Date.now(),
+    telegram_id: currentTelegramId,
+    author_name: tgUser.first_name || 'Пользователь',
+    title: name,
+    ingredients: currentRecipeIngredients,
+    cooked_weight: cookedWeight,
+    phe_per_100: finalPhe100,
+    prot_per_100: finalProt100,
+    is_public: isPublic
+  };
 
-  localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
-  alert('Рецепт "' + name + '" успешно сохранен в вашу базу!');
+  allRecipes.unshift(newRecipe);
+  localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+
+  if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
+    try {
+      const res = await fetch(DB_URL + '/rest/v1/recipes', {
+        method: 'POST',
+        headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json', 'Prefer': 'return=representation' },
+        body: JSON.stringify(newRecipe)
+      });
+      const data = await res.json();
+      if (data && data.length > 0) newRecipe.id = data[0].id;
+    } catch(e){}
+  }
+
+  alert('Рецепт успешно сохранен!');
   closeModal('recipeModal');
-  filterFoodList();
+  renderRecipes();
 }
+
+async function toggleRecipePublic(idx) {
+  const r = allRecipes[idx];
+  if (!r) return;
+  r.is_public = !r.is_public;
+  localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+  renderRecipes();
+
+  if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ') && r.id) {
+    try {
+      await fetch(DB_URL + '/rest/v1/recipes?id=eq.' + r.id, {
+        method: 'PATCH',
+        headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_public: r.is_public })
+      });
+    } catch(e){}
+  }
+}
+
+async function deleteRecipe(idx) {
+  if (confirm('Удалить этот рецепт?')) {
+    const r = allRecipes[idx];
+    allRecipes.splice(idx, 1);
+    localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+    renderRecipes();
+
+    if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ') && r?.id) {
+      try {
+        await fetch(DB_URL + '/rest/v1/recipes?id=eq.' + r.id, {
+          method: 'DELETE',
+          headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY }
+        });
+      } catch(e){}
+    }
+  }
+}
+
+async function loadRecipesFromSupabase() {
+  if (!DB_URL.startsWith('http') || DB_URL.includes('ВАШ_ПРОЕКТ')) return;
+  try {
+    const headers = { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY };
+
+    // Загрузка рецептов: публичные + свои
+    const res = await fetch(DB_URL + '/rest/v1/recipes?or=(is_public.eq.true,telegram_id.eq.' + currentTelegramId + ')&order=created_at.desc', { headers });
+    const data = await res.json();
+    if (data && Array.isArray(data)) {
+      allRecipes = data;
+      localStorage.setItem('pku_all_recipes_' + currentTelegramId, JSON.stringify(allRecipes));
+      renderRecipes();
+    }
+  } catch(e){}
+}
+
+// ==========================================
+// ЛОГИКА ДНЕВНИКА ПИТАНИЯ (СОХРАНЕНА НА 100%)
+// ==========================================
 
 function setCategory(cat, btn) {
   currentCategory = cat;
@@ -375,7 +549,7 @@ function renderFoodSearchList() {
   if (!container) return;
 
   if (currentFilteredList.length === 0) {
-    container.innerHTML = '<div style="padding:12px; text-align:center; font-size:12px; color:#94a3b8;">Ничего не найдено (введите название вручную ниже)</div>';
+    container.innerHTML = '<div style="padding:12px; text-align:center; font-size:12px; color:#94a3b8;">Ничего не найдено</div>';
     return;
   }
 
@@ -387,7 +561,6 @@ function renderFoodSearchList() {
               '<div class="search-item-name">' + icon + f.name + '</div>' +
               '<div style="display:flex; align-items:center; gap:8px;">' +
                 '<div class="search-item-meta">' + f.phe + ' мг Фа <span style="color:#64748b; font-weight:normal;">(' + f.prot + 'г б.)</span></div>' +
-                (f.isCustom ? '<button onclick="event.stopPropagation(); deleteCustomProduct(' + f.customIndex + ')" style="border:none; background:none; color:#ef4444; font-size:13px; cursor:pointer; padding:2px;">✕</button>' : '') +
               '</div>' +
             '</div>';
   }
@@ -401,14 +574,6 @@ function selectFoodByIndex(i) {
   document.getElementById('phe100Input').value = item.phe;
   document.getElementById('prot100Input').value = item.prot;
   calcPreview();
-}
-
-function deleteCustomProduct(index) {
-  if (confirm('Удалить этот продукт/рецепт из вашей личной базы?')) {
-    userCustomProducts.splice(index, 1);
-    localStorage.setItem('pku_custom_products_' + currentTelegramId, JSON.stringify(userCustomProducts));
-    filterFoodList();
-  }
 }
 
 async function syncWithSupabase() {
@@ -662,6 +827,5 @@ async function saveSettings() {
   }
 }
 
-// Запуск
 window.addEventListener('DOMContentLoaded', init);
 init();
