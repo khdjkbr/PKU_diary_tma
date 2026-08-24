@@ -20,92 +20,124 @@
 
   <div id="debugErrorBox"></div>
 
-  <!-- Шапка -->
-  <header class="header">
-    <div class="header-top">
-      <div class="header-title">🥑 ФКУ Дневник</div>
-      <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
-    </div>
-
-    <div class="date-nav">
-      <button class="date-btn" onclick="changeDate(-1)">◀ Вчера</button>
-      <div class="date-display" onclick="openDatePicker()">
-        <span>📅</span>
-        <span id="dateDisplayLabel">Сегодня</span>
-        <span id="todayBadge" class="today-tag">Сегодня</span>
-        <input type="date" id="hiddenDatePicker" onchange="onDatePicked(this.value)">
-      </div>
-      <button class="date-btn" onclick="changeDate(1)">Завтра ▶</button>
-    </div>
-  </header>
-
-  <div class="container">
-
-    <!-- Баланс Фа -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Фенилаланин (Фа)</span>
-        <span id="pheStatusBadge" class="badge badge-ok">В норме</span>
+  <!-- РАЗДЕЛ 1: ДНЕВНИК -->
+  <div id="viewDiary" class="app-view">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-title">🥑 ФКУ Дневник</div>
+        <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
       </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
-        <div>
-          <span id="consumedPheText" style="font-size:32px; font-weight:800; color:#0f172a;">0</span>
-          <span style="font-size:14px; color:#64748b;"> / <span id="limitPheText">300</span> мг</span>
+      <div class="date-nav">
+        <button class="date-btn" onclick="changeDate(-1)">◀ Вчера</button>
+        <div class="date-display" onclick="openDatePicker()">
+          <span>📅</span>
+          <span id="dateDisplayLabel">Сегодня</span>
+          <span id="todayBadge" class="today-tag">Сегодня</span>
+          <input type="date" id="hiddenDatePicker" onchange="onDatePicked(this.value)">
         </div>
-        <div style="text-align:right;">
-          <div style="font-size:11px; color:#64748b;">Осталось</div>
-          <div id="remainingPheText" style="font-size:18px; font-weight:800; color:#10b981;">300 мг</div>
+        <button class="date-btn" onclick="changeDate(1)">Завтра ▶</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Баланс Фа -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Фенилаланин (Фа)</span>
+          <span id="pheStatusBadge" class="badge badge-ok">В норме</span>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:6px;">
+          <div>
+            <span id="consumedPheText" style="font-size:32px; font-weight:800; color:#0f172a;">0</span>
+            <span style="font-size:14px; color:#64748b;"> / <span id="limitPheText">300</span> мг</span>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:11px; color:#64748b;">Осталось</div>
+            <div id="remainingPheText" style="font-size:18px; font-weight:800; color:#10b981;">300 мг</div>
+          </div>
+        </div>
+
+        <div class="progress-bar-bg">
+          <div id="pheProgressBar" class="progress-bar-fill fill-ok" style="width: 0%;"></div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; font-size:12px; color:#64748b; margin-top:4px;">
+          <span>Естеств. белок: <b id="consumedProteinText" style="color:#0f172a;">0.0</b> г</span>
+          <span>Лимит: <span id="limitProteinText">6.0</span> г</span>
         </div>
       </div>
 
-      <div class="progress-bar-bg">
-        <div id="pheProgressBar" class="progress-bar-fill fill-ok" style="width: 0%;"></div>
+      <!-- АКС -->
+      <div class="card">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Смесь (АКС)</span>
+          <span id="aksProgressText" style="font-size:12px; font-weight:700; color:#2563eb;">0 / 4 порций</span>
+        </div>
+        <div class="aks-grid" id="aksContainer"></div>
       </div>
 
-      <div style="display:flex; justify-content:space-between; font-size:12px; color:#64748b; margin-top:4px;">
-        <span>Естеств. белок: <b id="consumedProteinText" style="color:#0f172a;">0.0</b> г</span>
-        <span>Лимит: <span id="limitProteinText">6.0</span> г</span>
+      <!-- Приемы пищи -->
+      <div class="card">
+        <div class="meal-head"><span class="meal-title">☀️ Завтрак</span><span id="breakfastTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
+        <div id="breakfastList"></div>
+        <button class="btn-add" onclick="openAddFoodModal('Завтрак')">+ Добавить в завтрак</button>
+      </div>
+
+      <div class="card">
+        <div class="meal-head"><span class="meal-title">🍲 Обед</span><span id="lunchTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
+        <div id="lunchList"></div>
+        <button class="btn-add" onclick="openAddFoodModal('Обед')">+ Добавить в обед</button>
+      </div>
+
+      <div class="card">
+        <div class="meal-head"><span class="meal-title">🌙 Ужин</span><span id="dinnerTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
+        <div id="dinnerList"></div>
+        <button class="btn-add" onclick="openAddFoodModal('Ужин')">+ Добавить в ужин</button>
+      </div>
+
+      <div class="card">
+        <div class="meal-head"><span class="meal-title">🍎 Перекус</span><span id="snackTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
+        <div id="snackList"></div>
+        <button class="btn-add" onclick="openAddFoodModal('Перекус')">+ Добавить в перекус</button>
       </div>
     </div>
-
-    <!-- АКС -->
-    <div class="card">
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Смесь (АКС)</span>
-        <span id="aksProgressText" style="font-size:12px; font-weight:700; color:#2563eb;">0 / 4 порций</span>
-      </div>
-      <div class="aks-grid" id="aksContainer"></div>
-    </div>
-
-    <!-- Приемы пищи -->
-    <div class="card">
-      <div class="meal-head"><span class="meal-title">☀️ Завтрак</span><span id="breakfastTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
-      <div id="breakfastList"></div>
-      <button class="btn-add" onclick="openAddFoodModal('Завтрак')">+ Добавить в завтрак</button>
-    </div>
-
-    <div class="card">
-      <div class="meal-head"><span class="meal-title">🍲 Обед</span><span id="lunchTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
-      <div id="lunchList"></div>
-      <button class="btn-add" onclick="openAddFoodModal('Обед')">+ Добавить в обед</button>
-    </div>
-
-    <div class="card">
-      <div class="meal-head"><span class="meal-title">🌙 Ужин</span><span id="dinnerTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
-      <div id="dinnerList"></div>
-      <button class="btn-add" onclick="openAddFoodModal('Ужин')">+ Добавить в ужин</button>
-    </div>
-
-    <div class="card">
-      <div class="meal-head"><span class="meal-title">🍎 Перекус</span><span id="snackTotal" style="font-size:12px; color:#64748b; font-weight:600;">0 мг Фа</span></div>
-      <div id="snackList"></div>
-      <button class="btn-add" onclick="openAddFoodModal('Перекус')">+ Добавить в перекус</button>
-    </div>
-
   </div>
 
-  <!-- Модалка добавления еды -->
+  <!-- РАЗДЕЛ 2: ОБЪЕДИНЕННЫЕ РЕЦЕПТЫ -->
+  <div id="viewRecipes" class="app-view" style="display: none;">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-title">🍲 Рецепты сообщества</div>
+        <button class="btn-primary" style="padding: 6px 12px; font-size: 12px; width: auto;" onclick="openRecipeModal()">+ Создать</button>
+      </div>
+
+      <!-- Фильтры: Все рецепты / Мои -->
+      <div class="category-chips" style="margin-top: 10px; margin-bottom: 0;">
+        <button id="tabAllRecipes" class="chip active" onclick="switchRecipeTab('all')">🌍 Все рецепты</button>
+        <button id="tabMyRecipes" class="chip" onclick="switchRecipeTab('my')">⭐ Только мои</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <div id="recipesContainer"></div>
+    </div>
+  </div>
+
+  <!-- Нижняя панель навигации (Bottom Nav) -->
+  <nav class="bottom-nav">
+    <button class="nav-item active" id="navBtnDiary" onclick="switchView('diary')">
+      <span class="nav-icon">🥑</span>
+      <span>Дневник</span>
+    </button>
+    <button class="nav-item" id="navBtnRecipes" onclick="switchView('recipes')">
+      <span class="nav-icon">🍲</span>
+      <span>Рецепты</span>
+    </button>
+  </nav>
+
+  <!-- Модалка добавления еды в дневник -->
   <div id="addModal" class="modal">
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -119,6 +151,7 @@
 
       <div class="category-chips">
         <button class="chip active" onclick="setCategory('all', this)">Все</button>
+        <button class="chip" onclick="setCategory('custom', this)">⭐ Мои продукты</button>
         <button class="chip" onclick="setCategory('veg', this)">🥦 Овощи</button>
         <button class="chip" onclick="setCategory('fruit', this)">🍎 Фрукты</button>
         <button class="chip" onclick="setCategory('special', this)">✨ Спецпродукты</button>
@@ -158,6 +191,96 @@
     </div>
   </div>
 
+  <!-- Модалка создания рецепта -->
+  <div id="recipeModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="font-size:16px; font-weight:700;">🍲 Новый рецепт</h3>
+        <button class="icon-btn" onclick="closeModal('recipeModal')">✕</button>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Название составного блюда</label>
+        <input type="text" id="recipeNameInput" class="input-control" placeholder="Например: Овощной суп с вермишелью">
+      </div>
+
+      <!-- Добавление ингредиента -->
+      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin-bottom:10px;">
+        <span style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;">Добавить ингредиент</span>
+        <div style="margin-top:6px;">
+          <select id="recipeIngredientSelect" class="input-control" style="margin-bottom:6px;">
+            <option value="">-- Выберите продукт --</option>
+          </select>
+        </div>
+        <div style="display:flex; gap:6px;">
+          <input type="number" id="recipeIngredientWeight" class="input-control" placeholder="Вес (г)" style="width:120px;">
+          <button class="btn-primary" style="padding:8px 12px; font-size:12px; width:auto;" onclick="addIngredientToRecipe()">+ Добавить</button>
+        </div>
+      </div>
+
+      <!-- Список добавленных ингредиентов -->
+      <div style="margin-bottom:10px;">
+        <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Ингредиенты блюда:</span>
+        <div id="recipeIngredientsList" style="margin-top:4px; max-height:120px; overflow-y:auto;">
+          <div style="font-size:12px; color:#94a3b8; padding:6px 0;">Ингредиенты еще не добавлены</div>
+        </div>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Итоговый вес готового блюда (г)</label>
+        <input type="number" id="recipeCookedWeightInput" class="input-control input-highlight" placeholder="Например: 500" oninput="calculateRecipeTotals()">
+        <span style="font-size:10px; color:#64748b; display:block; margin-top:2px;">Взвесьте блюдо после приготовления</span>
+      </div>
+
+      <!-- Расчет на 100г -->
+      <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:12px; border-radius:12px; margin-bottom:12px;">
+        <div style="font-size:11px; color:#065f46; font-weight:600;">НА 100 Г ГОТОВОГО БЛЮДА:</div>
+        <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
+          <span style="font-size:16px; font-weight:800; color:#047857;" id="recipeResultPhe">0 мг Фа</span>
+          <span style="font-size:13px; font-weight:700; color:#047857;" id="recipeResultProt">0.0 г белка</span>
+        </div>
+      </div>
+
+      <!-- Публикация в сообщество -->
+      <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; background:#f1f5f9; padding:10px; border-radius:10px;">
+        <input type="checkbox" id="recipeIsPublicCheck" checked style="width:18px; height:18px; accent-color:#10b981;">
+        <label for="recipeIsPublicCheck" style="font-size:12px; font-weight:600; color:#334155; cursor:pointer;">
+          🌍 Опубликовать в общую книгу (будет виден всем)
+        </label>
+      </div>
+
+      <button class="btn-primary" onclick="saveRecipe()">Сохранить рецепт</button>
+    </div>
+  </div>
+
+  <!-- Модалка быстрого добавления порции рецепта в дневник -->
+  <div id="quickAddRecipeModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 id="quickRecipeTitle" style="font-size:16px; font-weight:700;">Добавить в дневник</h3>
+        <button class="icon-btn" onclick="closeModal('quickAddRecipeModal')">✕</button>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Прием пищи</label>
+        <select id="quickRecipeMealSelect" class="input-control">
+          <option value="Завтрак">☀️ Завтрак</option>
+          <option value="Обед" selected>🍲 Обед</option>
+          <option value="Ужин">🌙 Ужин</option>
+          <option value="Перекус">🍎 Перекус</option>
+        </select>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Вес съеденной порции (г)</label>
+        <input type="number" id="quickRecipeWeight" class="input-control input-highlight" placeholder="150" oninput="calcQuickRecipePreview()">
+      </div>
+      <div style="background:#f1f5f9; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <span style="font-size:12px; color:#64748b;">Итого в порции:</span>
+        <span id="quickRecipePreviewCalc" style="font-weight:800; color:#10b981; font-size:15px;">0 мг Фа</span>
+      </div>
+      <button class="btn-primary" onclick="confirmQuickAddRecipe()">Записать в дневник</button>
+    </div>
+  </div>
+
   <!-- Модалка настроек -->
   <div id="settingsModal" class="modal">
     <div class="modal-content">
@@ -177,7 +300,6 @@
     </div>
   </div>
 
-  <!-- Подключение файла с логикой -->
   <script src="app.js"></script>
 </body>
 </html>
