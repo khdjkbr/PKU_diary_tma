@@ -105,7 +105,7 @@
     </div>
   </div>
 
-  <!-- РАЗДЕЛ 2: ОБЪЕДИНЕННЫЕ РЕЦЕПТЫ -->
+  <!-- РАЗДЕЛ 2: РЕЦЕПТЫ -->
   <div id="viewRecipes" class="app-view" style="display: none;">
     <header class="header">
       <div class="header-top">
@@ -125,14 +125,32 @@
     </div>
   </div>
 
-  <!-- Нижняя панель навигации (Bottom Nav) -->
+  <!-- СОВРЕМЕННАЯ СТРОГО ОЦЕНТРИРОВАННАЯ НАВИГАЦИОННАЯ ПАНЕЛЬ -->
   <nav class="bottom-nav">
-    <button class="nav-item active" id="navBtnDiary" onclick="switchView('diary')">
-      <span class="nav-icon">🥑</span>
-      <span>Дневник</span>
+    <!-- 1. Конструктор рецептов -->
+    <button class="nav-item" id="navBtnConstructor" onclick="openRecipeModal()">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24">
+        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+      </svg>
+      <span>Конструктор</span>
     </button>
+
+    <!-- 2. Дневник (Главная круглая выходящая кнопка) -->
+    <div class="nav-center-wrap" onclick="switchView('diary')">
+      <div class="nav-fab-btn" id="navFabBtn">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
+        </svg>
+      </div>
+      <span class="nav-fab-label" id="navFabLabel">Дневник</span>
+    </div>
+
+    <!-- 3. Рецепты -->
     <button class="nav-item" id="navBtnRecipes" onclick="switchView('recipes')">
-      <span class="nav-icon">🍲</span>
+      <svg class="nav-icon-svg" viewBox="0 0 24 24">
+        <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
+        <path d="M6 6h10M6 10h10M6 14h6"/>
+      </svg>
       <span>Рецепты</span>
     </button>
   </nav>
@@ -191,25 +209,24 @@
     </div>
   </div>
 
-  <!-- Модалка создания рецепта -->
+  <!-- Модалка Конструктора Рецептов -->
   <div id="recipeModal" class="modal">
     <div class="modal-content">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-        <h3 style="font-size:16px; font-weight:700;">🍲 Новый рецепт</h3>
+        <h3 style="font-size:16px; font-weight:700;">🥣 Конструктор рецепта</h3>
         <button class="icon-btn" onclick="closeModal('recipeModal')">✕</button>
       </div>
 
       <div class="input-group">
-        <label class="input-label">Название составного блюда</label>
+        <label class="input-label">Название блюда</label>
         <input type="text" id="recipeNameInput" class="input-control" placeholder="Например: Овощной суп с вермишелью">
       </div>
 
-      <!-- Добавление ингредиента -->
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin-bottom:10px;">
-        <span style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;">Добавить ингредиент</span>
+        <span style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;">Добавить ингредиент:</span>
         <div style="margin-top:6px;">
           <select id="recipeIngredientSelect" class="input-control" style="margin-bottom:6px;">
-            <option value="">-- Выберите продукт --</option>
+            <option value="">-- Выберите продукт из базы --</option>
           </select>
         </div>
         <div style="display:flex; gap:6px;">
@@ -218,7 +235,6 @@
         </div>
       </div>
 
-      <!-- Список добавленных ингредиентов -->
       <div style="margin-bottom:10px;">
         <span style="font-size:11px; font-weight:700; color:#64748b; text-transform:uppercase;">Ингредиенты блюда:</span>
         <div id="recipeIngredientsList" style="margin-top:4px; max-height:120px; overflow-y:auto;">
@@ -234,18 +250,17 @@
 
       <!-- Расчет на 100г -->
       <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:12px; border-radius:12px; margin-bottom:12px;">
-        <div style="font-size:11px; color:#065f46; font-weight:600;">НА 100 Г ГОТОВОГО БЛЮДА:</div>
+        <div style="font-size:11px; color:#065f46; font-weight:600;">РАСЧЕТ НА 100 Г ГОТОВОГО БЛЮДА:</div>
         <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
           <span style="font-size:16px; font-weight:800; color:#047857;" id="recipeResultPhe">0 мг Фа</span>
           <span style="font-size:13px; font-weight:700; color:#047857;" id="recipeResultProt">0.0 г белка</span>
         </div>
       </div>
 
-      <!-- Публикация в сообщество -->
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; background:#f1f5f9; padding:10px; border-radius:10px;">
         <input type="checkbox" id="recipeIsPublicCheck" checked style="width:18px; height:18px; accent-color:#10b981;">
         <label for="recipeIsPublicCheck" style="font-size:12px; font-weight:600; color:#334155; cursor:pointer;">
-          🌍 Опубликовать в общую книгу (будет виден всем)
+          🌍 Опубликовать в общую книгу (виден всем)
         </label>
       </div>
 
