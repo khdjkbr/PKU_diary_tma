@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ФКУ Дневник</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- Подключение файла с ключами -->
   <script src="config.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
@@ -16,7 +15,6 @@
     .header-title { font-size: 16px; font-weight: 700; color: #1e293b; display: flex; align-items: center; gap: 6px; }
     .icon-btn { background: #f1f5f9; border: none; border-radius: 50%; width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #475569; font-size: 14px; }
     
-    /* Навигация по датам */
     .date-nav { display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 4px 8px; margin-top: 8px; }
     .date-btn { background: none; border: none; font-size: 14px; color: #475569; padding: 4px 8px; cursor: pointer; border-radius: 8px; }
     .date-btn:active { background: #e2e8f0; }
@@ -56,12 +54,23 @@
     /* Modal */
     .modal { position: fixed; inset: 0; background: rgba(15,23,42,0.6); z-index: 50; display: none; align-items: flex-end; justify-content: center; }
     .modal.active { display: flex; }
-    .modal-content { background: #fff; width: 100%; max-width: 460px; border-radius: 24px 24px 0 0; padding: 20px; max-height: 90vh; overflow-y: auto; }
-    .input-group { margin-bottom: 12px; }
+    .modal-content { background: #fff; width: 100%; max-width: 460px; border-radius: 24px 24px 0 0; padding: 18px; max-height: 90vh; overflow-y: auto; }
+    .input-group { margin-bottom: 10px; }
     .input-label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
-    .input-control { width: 100%; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
-    .input-highlight { border: 2px solid #10b981; background: #f0fdf4; font-weight: bold; font-size: 16px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .input-control { width: 100%; padding: 9px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 13px; }
+    .input-highlight { border: 2px solid #10b981; background: #f0fdf4; font-weight: bold; font-size: 15px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    /* Категории и живой поиск */
+    .category-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; -webkit-overflow-scrolling: touch; }
+    .chip { font-size: 11px; padding: 4px 10px; border-radius: 14px; background: #f1f5f9; color: #475569; border: none; cursor: pointer; white-space: nowrap; font-weight: 600; }
+    .chip.active { background: #10b981; color: #fff; }
+    
+    .food-search-list { max-height: 160px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; margin-bottom: 12px; background: #fafafa; }
+    .search-item { padding: 8px 10px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; cursor: pointer; font-size: 12px; }
+    .search-item:hover, .search-item:active { background: #ecfdf5; }
+    .search-item-name { font-weight: 600; color: #1e293b; }
+    .search-item-meta { font-size: 11px; color: #047857; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -164,23 +173,35 @@
 
   </div>
 
-  <!-- Модальное окно добавления продукта -->
+  <!-- Модальное окно добавления продукта (с живым поиском) -->
   <div id="addModal" class="modal">
     <div class="modal-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <h3 id="modalMealTitle" style="font-size:16px; font-weight:700;">Добавить продукт</h3>
         <button class="icon-btn" onclick="closeModal('addModal')">✕</button>
       </div>
 
+      <!-- Живой поиск -->
       <div class="input-group">
-        <label class="input-label">Выбор из базы</label>
-        <select id="foodSelect" class="input-control" onchange="onFoodSelectChange()">
-          <option value="custom">-- Ручной ввод / Свой продукт --</option>
-        </select>
+        <input type="text" id="foodSearchInput" class="input-control" placeholder="🔍 Поиск продукта в базе..." oninput="filterFoodList()">
       </div>
 
-      <div class="input-group" id="customNameGroup">
-        <label class="input-label">Название продукта</label>
+      <!-- Чипсы категорий -->
+      <div class="category-chips">
+        <button class="chip active" onclick="setCategory('all', this)">Все</button>
+        <button class="chip" onclick="setCategory('veg', this)">🥦 Овощи</button>
+        <button class="chip" onclick="setCategory('fruit', this)">🍎 Фрукты</button>
+        <button class="chip" onclick="setCategory('special', this)">✨ Спецпродукты (НБ)</button>
+        <button class="chip" onclick="setCategory('sweet', this)">🍬 Сладости/Жиры</button>
+        <button class="chip" onclick="setCategory('grain', this)">🌾 Крупы/Мука</button>
+      </div>
+
+      <!-- Список результатов поиска -->
+      <div class="food-search-list" id="foodSearchListContainer"></div>
+
+      <!-- Поля выбранного продукта -->
+      <div class="input-group">
+        <label class="input-label">Название продукта / блюда</label>
         <input type="text" id="foodNameInput" class="input-control" placeholder="Например: Кабачок">
       </div>
 
@@ -200,7 +221,7 @@
         <input type="number" id="weightInput" class="input-control input-highlight" placeholder="100" oninput="calcPreview()">
       </div>
 
-      <div style="background:#f1f5f9; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <div style="background:#f1f5f9; padding:10px; border-radius:10px; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
         <span style="font-size:12px; color:#64748b;">Итого в порции:</span>
         <span id="previewCalc" style="font-weight:800; color:#10b981; font-size:15px;">0 мг Фа (0.0 г б.)</span>
       </div>
@@ -229,7 +250,6 @@
   </div>
 
   <script>
-    // Проверяем наличие ключей из config.js
     const DB_URL = typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL : '';
     const DB_KEY = typeof SUPABASE_KEY !== 'undefined' ? SUPABASE_KEY : '';
 
@@ -239,23 +259,61 @@
     const tgUser = tg?.initDataUnsafe?.user || { id: 99999999, first_name: "Пользователь" };
     const currentTelegramId = tgUser.id;
 
-    // База продуктов
+    // Расширенная база продуктов для ФКУ
     const FOOD_BASE = [
-      { name: "Яблоко (свежее)", phe: 15, prot: 0.4 },
-      { name: "Банан", phe: 45, prot: 1.1 },
-      { name: "Огурец (свежий)", phe: 20, prot: 0.8 },
-      { name: "Помидор (свежий)", phe: 25, prot: 0.9 },
-      { name: "Кабачок (свежий)", phe: 30, prot: 0.6 },
-      { name: "Картофель (отварной)", phe: 85, prot: 2.0 },
-      { name: "Морковь", phe: 35, prot: 1.3 },
-      { name: "Капуста белокочанная", phe: 45, prot: 1.8 },
-      { name: "МакМастер: Вермишель н/б", phe: 15, prot: 0.5 },
-      { name: "МакМастер: Мука безбелковая", phe: 10, prot: 0.3 },
-      { name: "Balviten: Хлеб малобелковый", phe: 20, prot: 0.6 },
-      { name: "Саго крупа", phe: 12, prot: 0.3 }
+      // Овощи и зелень
+      { name: "Кабачок (свежий)", cat: "veg", phe: 30, prot: 0.6 },
+      { name: "Огурец (свежий)", cat: "veg", phe: 20, prot: 0.8 },
+      { name: "Помидор (свежий)", cat: "veg", phe: 25, prot: 0.9 },
+      { name: "Морковь", cat: "veg", phe: 35, prot: 1.3 },
+      { name: "Картофель (отварной)", cat: "veg", phe: 85, prot: 2.0 },
+      { name: "Капуста белокочанная", cat: "veg", phe: 45, prot: 1.8 },
+      { name: "Цветная капуста", cat: "veg", phe: 65, prot: 2.5 },
+      { name: "Брокколи", cat: "veg", phe: 80, prot: 3.0 },
+      { name: "Тыква", cat: "veg", phe: 30, prot: 1.0 },
+      { name: "Свекла отварная", cat: "veg", phe: 45, prot: 1.7 },
+      { name: "Баклажан", cat: "veg", phe: 35, prot: 1.2 },
+      { name: "Зелень (укроп, петрушка)", cat: "veg", phe: 60, prot: 2.5 },
+
+      // Фрукты и ягоды
+      { name: "Яблоко (свежее)", cat: "fruit", phe: 15, prot: 0.4 },
+      { name: "Груша", cat: "fruit", phe: 15, prot: 0.4 },
+      { name: "Банан", cat: "fruit", phe: 45, prot: 1.1 },
+      { name: "Апельсин / Мандарин", cat: "fruit", phe: 30, prot: 0.9 },
+      { name: "Персик / Нектарин", cat: "fruit", phe: 30, prot: 0.9 },
+      { name: "Клубника", cat: "fruit", phe: 25, prot: 0.8 },
+      { name: "Малина", cat: "fruit", phe: 25, prot: 0.8 },
+      { name: "Арбуз", cat: "fruit", phe: 15, prot: 0.6 },
+      { name: "Дыня", cat: "fruit", phe: 20, prot: 0.6 },
+      { name: "Виноград", cat: "fruit", phe: 20, prot: 0.6 },
+
+      // Спецпродукты (Малобелковые / Безбелковые)
+      { name: "МакМастер: Вермишель н/б", cat: "special", phe: 15, prot: 0.5 },
+      { name: "МакМастер: Мука безбелковая", cat: "special", phe: 10, prot: 0.3 },
+      { name: "МакМастер: Рис малобелковый", cat: "special", phe: 15, prot: 0.5 },
+      { name: "МакМастер: Гречка н/б", cat: "special", phe: 15, prot: 0.5 },
+      { name: "Balviten: Хлеб малобелковый", cat: "special", phe: 20, prot: 0.6 },
+      { name: "Balviten: Мука универсальная н/б", cat: "special", phe: 15, prot: 0.5 },
+      { name: "Безглютен: Печенье н/б", cat: "special", phe: 25, prot: 0.8 },
+      { name: "Саго крупа", cat: "special", phe: 12, prot: 0.3 },
+      { name: "Заменитель яйца малобелковый", cat: "special", phe: 10, prot: 0.2 },
+
+      // Сладости и жиры
+      { name: "Масло сливочное 82%", cat: "sweet", phe: 25, prot: 0.5 },
+      { name: "Масло растительное (подсолн./оливк.)", cat: "sweet", phe: 0, prot: 0.0 },
+      { name: "Сахар песок", cat: "sweet", phe: 0, prot: 0.0 },
+      { name: "Мед натуральный", cat: "sweet", phe: 10, prot: 0.3 },
+      { name: "Мармелад желейный", cat: "sweet", phe: 5, prot: 0.1 },
+
+      // Крупы и мука натуральные
+      { name: "Рис круглозерный (обычный)", cat: "grain", phe: 320, prot: 7.0 },
+      { name: "Гречневая крупа (обычная)", cat: "grain", phe: 450, prot: 12.0 },
+      { name: "Овсяные хлопья (обычные)", cat: "grain", phe: 480, prot: 12.5 },
+      { name: "Хлеб пшеничный белый", cat: "grain", phe: 380, prot: 7.5 }
     ];
 
     let currentDateObj = new Date();
+    let currentCategory = 'all';
 
     let appData = {
       settings: { dailyPhe: 300, aksPortions: 4 },
@@ -328,13 +386,52 @@
         try { appData.settings = JSON.parse(savedSettings); } catch(e){}
       }
 
-      const sel = document.getElementById('foodSelect');
-      sel.innerHTML = '<option value="custom">-- Ручной ввод / Свой продукт --</option>';
-      FOOD_BASE.forEach((item, i) => {
-        sel.innerHTML += `<option value="${i}">${item.name} (${item.phe} мг Фа / 100г)</option>`;
-      });
-
+      renderFoodSearchList();
       updateDateUI();
+    }
+
+    // Живой поиск и фильтрация продуктов
+    function setCategory(cat, btn) {
+      currentCategory = cat;
+      document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      btn.classList.add('active');
+      filterFoodList();
+    }
+
+    function filterFoodList() {
+      const query = document.getElementById('foodSearchInput').value.toLowerCase().trim();
+      const filtered = FOOD_BASE.filter(item => {
+        const matchesCat = (currentCategory === 'all' || item.cat === currentCategory);
+        const matchesQuery = !query || item.name.toLowerCase().includes(query);
+        return matchesCat && matchesQuery;
+      });
+      renderFoodSearchList(filtered);
+    }
+
+    function renderFoodSearchList(items = FOOD_BASE) {
+      const container = document.getElementById('foodSearchListContainer');
+      if (items.length === 0) {
+        container.innerHTML = '<div style="padding:12px; text-align:center; font-size:12px; color:#94a3b8;">Ничего не найдено (введите название вручную)</div>';
+        return;
+      }
+
+      container.innerHTML = items.map((f, i) => `
+        <div class="search-item" onclick="selectFoodItem('${escapeHtml(f.name)}', ${f.phe}, ${f.prot})">
+          <div class="search-item-name">${f.name}</div>
+          <div class="search-item-meta">${f.phe} мг Фа <span style="color:#64748b; font-weight:normal;">(${f.prot}г б.)</span></div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/'/g, "\\'");
+    }
+
+    function selectFoodItem(name, phe, prot) {
+      document.getElementById('foodNameInput').value = name;
+      document.getElementById('phe100Input').value = phe;
+      document.getElementById('prot100Input').value = prot;
+      calcPreview();
     }
 
     async function syncWithSupabase() {
@@ -445,6 +542,7 @@
         bar.className = 'progress-bar-fill fill-warn';
       }
 
+      // АКС
       const aksDiv = document.getElementById('aksContainer');
       aksDiv.innerHTML = '';
       let takenCnt = 0;
@@ -453,23 +551,6 @@
         aksDiv.innerHTML += `<button class="aks-btn ${isTaken ? 'aks-on' : 'aks-off'}" onclick="toggleAks(${i})">${i+1}-я порция</button>`;
       });
       document.getElementById('aksProgressText').textContent = `${takenCnt} / ${appData.aks.length} порций`;
-    }
-
-    function onFoodSelectChange() {
-      const val = document.getElementById('foodSelect').value;
-      if (val === 'custom') {
-        document.getElementById('customNameGroup').style.display = 'block';
-        document.getElementById('foodNameInput').value = '';
-        document.getElementById('phe100Input').value = '';
-        document.getElementById('prot100Input').value = '';
-      } else {
-        const f = FOOD_BASE[parseInt(val)];
-        document.getElementById('customNameGroup').style.display = 'none';
-        document.getElementById('foodNameInput').value = f.name;
-        document.getElementById('phe100Input').value = f.phe;
-        document.getElementById('prot100Input').value = f.prot;
-      }
-      calcPreview();
     }
 
     function calcPreview() {
@@ -486,9 +567,14 @@
     function openAddFoodModal(m) {
       activeMeal = m;
       document.getElementById('modalMealTitle').textContent = 'Добавить в ' + m.toLowerCase();
-      document.getElementById('foodSelect').value = 'custom';
-      onFoodSelectChange();
+      document.getElementById('foodSearchInput').value = '';
+      document.getElementById('foodNameInput').value = '';
+      document.getElementById('phe100Input').value = '';
+      document.getElementById('prot100Input').value = '';
       document.getElementById('weightInput').value = '';
+      currentCategory = 'all';
+      document.querySelectorAll('.chip').forEach((c, idx) => c.classList.toggle('active', idx === 0));
+      renderFoodSearchList();
       calcPreview();
       openModal('addModal');
     }
@@ -544,50 +630,3 @@
       if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
         try {
           await fetch(`${DB_URL}/rest/v1/aks_logs`, {
-            method: 'POST',
-            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
-            body: JSON.stringify({ telegram_id: currentTelegramId, log_date: appData.today, portion_index: i, is_taken: appData.aks[i] })
-          });
-        } catch(e){}
-      }
-    }
-
-    function openModal(id) {
-      if (id === 'settingsModal') {
-        document.getElementById('settingDailyPhe').value = appData.settings.dailyPhe;
-        document.getElementById('settingAksPortions').value = appData.settings.aksPortions;
-      }
-      document.getElementById(id).classList.add('active');
-    }
-
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('active');
-    }
-
-    async function saveSettings() {
-      const phe = parseInt(document.getElementById('settingDailyPhe').value) || 300;
-      const aksCount = parseInt(document.getElementById('settingAksPortions').value) || 4;
-      appData.settings.dailyPhe = phe;
-      if (appData.settings.aksPortions !== aksCount) {
-        appData.settings.aksPortions = aksCount;
-        appData.aks = new Array(aksCount).fill(false);
-      }
-      saveLocal();
-      render();
-      closeModal('settingsModal');
-
-      if (DB_URL.startsWith('http') && !DB_URL.includes('ВАШ_ПРОЕКТ')) {
-        try {
-          await fetch(`${DB_URL}/rest/v1/users?telegram_id=eq.${currentTelegramId}`, {
-            method: 'PATCH',
-            headers: { 'apikey': DB_KEY, 'Authorization': 'Bearer ' + DB_KEY, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ daily_phe: phe, aks_portions: aksCount })
-          });
-        } catch(e){}
-      }
-    }
-
-    init();
-  </script>
-</body>
-</html>
