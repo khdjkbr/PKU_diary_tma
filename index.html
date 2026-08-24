@@ -7,7 +7,7 @@
   <!-- Telegram Web App SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide иконки -->
@@ -22,10 +22,15 @@
 </head>
 <body class="pb-24">
 
-  <!-- Индикатор загрузки базы -->
-  <div id="loadingOverlay" class="fixed inset-0 bg-white/80 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3">
+  <!-- Индикатор загрузки базы (с автозакрытием через 2.5 сек) -->
+  <div id="loadingOverlay" class="fixed inset-0 bg-white/90 backdrop-blur-sm z-50 flex flex-col items-center justify-center gap-3 transition-opacity duration-300">
     <div class="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
     <span class="text-xs font-semibold text-slate-500">Загрузка дневника...</span>
+  </div>
+
+  <!-- Плашка статуса подключения (если оффлайн / ошибка ключа) -->
+  <div id="connectionBanner" class="hidden bg-amber-500 text-white text-[11px] py-1 px-3 text-center font-medium sticky top-0 z-20">
+    Работа в локальном режиме (проверьте ключи Supabase)
   </div>
 
   <!-- Шапка -->
@@ -227,12 +232,22 @@
 
   <script>
     // ==========================================
-    // 1. НАСТРОЙКА КЛЮЧЕЙ SUPABASE (ВСТАВЬТЕ СЮДА СВОИ КЛЮЧИ)
+    // 1. НАСТРОЙКА КЛЮЧЕЙ SUPABASE (ВСТАВЬТЕ СЮДА СВОИ ЗНАЧЕНИЯ)
     // ==========================================
     const SUPABASE_URL = "https://lkvoxthapdybhyyqghfl.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imxrdm94dGhhcGR5Ymh5eXFnaGZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1OTQwOTUsImV4cCI6MjEwMzE3MDA5NX0.-Sh-ir0g27jpyDzC4yTsemOw2eoVue6sRWuJo0Hwttc";
 
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let supabase = null;
+    let isCloudConnected = false;
+
+    try {
+      if (window.supabase && SUPABASE_URL.startsWith('http') && !SUPABASE_URL.includes('ВАШ_ПРОЕКТ')) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        isCloudConnected = true;
+      }
+    } catch(e) {
+      console.warn("Supabase init fallback:", e);
+    }
 
     // ==========================================
     // 2. ИНИЦИАЛИЗАЦИЯ TELEGRAM USER
@@ -245,8 +260,8 @@
 
     const tgUser = tg?.initDataUnsafe?.user || {
       id: 99999999,
-      first_name: "Тестовый пользователь",
-      username: "demo_user"
+      first_name: "Пользователь",
+      username: "user"
     };
 
     const currentTelegramId = tgUser.id;
@@ -274,14 +289,45 @@
       entries: []
     };
 
-    // ==========================================
-    // 3. ЗАГРУЗКА И СИНХРОНИЗАЦИЯ С SUPABASE
-    // ==========================================
-    async function initCloudData() {
-      try {
-        document.getElementById('loadingOverlay').classList.remove('hidden');
+    function hideLoadingOverlay() {
+      const overlay = document.getElementById('loadingOverlay');
+      if (overlay) {
+        overlay.classList.add('opacity-0');
+        setTimeout(() => overlay.classList.add('hidden'), 300);
+      }
+    }
 
-        // Проверяем / создаем пользователя
+    // Таймер безопасности: закрыть экран загрузки максимум через 2.5 сек при любых сбоях
+    setTimeout(() => {
+      hideLoadingOverlay();
+    }, 2500);
+
+    // ==========================================
+    // 3. ЗАГРУЗКА ДАННЫХ
+    // ==========================================
+    async function initData() {
+      // 1. Сначала читаем из локального кэша для мгновенного старта
+      const savedLocal = localStorage.getItem('pku_diary_' + currentTelegramId);
+      if (savedLocal) {
+        try {
+          const parsed = JSON.parse(savedLocal);
+          if (parsed.today === new Date().toISOString().split('T')[0]) {
+            appData = parsed;
+          }
+        } catch(e){}
+      }
+
+      populateProductSelect();
+      renderAll();
+
+      if (!isCloudConnected) {
+        document.getElementById('connectionBanner').classList.remove('hidden');
+        hideLoadingOverlay();
+        return;
+      }
+
+      // 2. Синхронизируем с Supabase
+      try {
         let { data: user, error: userErr } = await supabase
           .from('users')
           .select('*')
@@ -307,7 +353,6 @@
         appData.settings.dailyPhe = user.daily_phe || 300;
         appData.settings.aksPortions = user.aks_portions || 4;
 
-        // Загружаем записи за сегодня
         const todayStr = new Date().toISOString().split('T')[0];
         appData.today = todayStr;
 
@@ -318,16 +363,17 @@
           .eq('entry_date', todayStr)
           .order('created_at', { ascending: true });
 
-        appData.entries = (entries || []).map(e => ({
-          id: e.id,
-          meal: e.meal_type,
-          name: e.food_name,
-          weight: Number(e.weight_g),
-          phe: Number(e.phe_mg),
-          protein: Number(e.protein_g)
-        }));
+        if (entries) {
+          appData.entries = entries.map(e => ({
+            id: e.id,
+            meal: e.meal_type,
+            name: e.food_name,
+            weight: Number(e.weight_g),
+            phe: Number(e.phe_mg),
+            protein: Number(e.protein_g)
+          }));
+        }
 
-        // Загружаем порции АКС за сегодня
         const { data: aksLogs } = await supabase
           .from('aks_logs')
           .select('*')
@@ -341,11 +387,11 @@
           }
         });
 
+        localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
       } catch (err) {
-        console.error("Ошибка подключения к Supabase:", err);
+        console.warn("Ошибка синхронизации:", err);
       } finally {
-        document.getElementById('loadingOverlay').classList.add('hidden');
-        populateProductSelect();
+        hideLoadingOverlay();
         renderAll();
       }
     }
@@ -426,56 +472,74 @@
       const totalPhe = Math.round((weight * phe100) / 100);
       const totalProtein = parseFloat(((weight * prot100) / 100).toFixed(2));
 
-      // Сохранение в Supabase
-      const { data, error } = await supabase
-        .from('diary_entries')
-        .insert([{
-          telegram_id: currentTelegramId,
-          entry_date: appData.today,
-          meal_type: activeMealType,
-          food_name: name,
-          weight_g: weight,
-          phe_mg: totalPhe,
-          protein_g: totalProtein
-        }])
-        .select()
-        .single();
-
-      if (!error && data) {
-        appData.entries.push({
-          id: data.id,
-          meal: activeMealType,
-          name: name,
-          weight: weight,
-          phe: totalPhe,
-          protein: totalProtein
-        });
-        renderAll();
-      }
-
+      const tempId = Date.now();
+      appData.entries.push({
+        id: tempId,
+        meal: activeMealType,
+        name: name,
+        weight: weight,
+        phe: totalPhe,
+        protein: totalProtein
+      });
+      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
+      renderAll();
       closeAddModal();
+
+      if (isCloudConnected && supabase) {
+        try {
+          const { data } = await supabase
+            .from('diary_entries')
+            .insert([{
+              telegram_id: currentTelegramId,
+              entry_date: appData.today,
+              meal_type: activeMealType,
+              food_name: name,
+              weight_g: weight,
+              phe_mg: totalPhe,
+              protein_g: totalProtein
+            }])
+            .select()
+            .single();
+
+          if (data) {
+            const idx = appData.entries.findIndex(e => e.id === tempId);
+            if (idx !== -1) appData.entries[idx].id = data.id;
+          }
+        } catch(e){}
+      }
     }
 
     async function deleteEntry(id) {
       appData.entries = appData.entries.filter(e => e.id !== id);
+      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
       renderAll();
-      await supabase.from('diary_entries').delete().eq('id', id);
+
+      if (isCloudConnected && supabase && typeof id === 'number') {
+        try {
+          await supabase.from('diary_entries').delete().eq('id', id);
+        } catch(e){}
+      }
     }
 
     async function toggleAks(index) {
       const newStatus = !appData.aks[index];
       appData.aks[index] = newStatus;
+      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
       renderAll();
 
-      await supabase
-        .from('aks_logs')
-        .upsert({
-          telegram_id: currentTelegramId,
-          log_date: appData.today,
-          portion_index: index,
-          is_taken: newStatus,
-          taken_at: new Date().toISOString()
-        }, { onConflict: 'telegram_id,log_date,portion_index' });
+      if (isCloudConnected && supabase) {
+        try {
+          await supabase
+            .from('aks_logs')
+            .upsert({
+              telegram_id: currentTelegramId,
+              log_date: appData.today,
+              portion_index: index,
+              is_taken: newStatus,
+              taken_at: new Date().toISOString()
+            }, { onConflict: 'telegram_id,log_date,portion_index' });
+        } catch(e){}
+      }
     }
 
     function renderAll() {
@@ -588,23 +652,27 @@
         appData.settings.aksPortions = aksCount;
         appData.aks = new Array(aksCount).fill(false);
       }
+      localStorage.setItem('pku_diary_' + currentTelegramId, JSON.stringify(appData));
       renderAll();
       closeSettingsModal();
 
-      // Сохраняем в Supabase
-      await supabase
-        .from('users')
-        .update({
-          daily_phe: phe,
-          daily_protein: parseFloat((phe / 50).toFixed(1)),
-          aks_portions: aksCount,
-          last_active: new Date().toISOString()
-        })
-        .eq('telegram_id', currentTelegramId);
+      if (isCloudConnected && supabase) {
+        try {
+          await supabase
+            .from('users')
+            .update({
+              daily_phe: phe,
+              daily_protein: parseFloat((phe / 50).toFixed(1)),
+              aks_portions: aksCount,
+              last_active: new Date().toISOString()
+            })
+            .eq('telegram_id', currentTelegramId);
+        } catch(e){}
+      }
     }
 
     // Запуск приложения
-    initCloudData();
+    initData();
   </script>
 </body>
 </html>
