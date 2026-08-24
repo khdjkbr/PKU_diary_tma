@@ -1,5 +1,5 @@
 * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
-body { background: #f8fafc; color: #0f172a; padding-bottom: 90px; }
+body { background: #f8fafc; color: #0f172a; padding-bottom: 95px; }
 
 #debugErrorBox { display: none; background: #ef4444; color: #fff; padding: 8px 12px; font-size: 12px; font-weight: bold; position: sticky; top: 0; z-index: 100; text-align: center; }
 
@@ -64,3 +64,113 @@ body { background: #f8fafc; color: #0f172a; padding-bottom: 90px; }
 .search-item:active { background: #ecfdf5; }
 .search-item-name { font-weight: 600; color: #1e293b; }
 .search-item-meta { font-size: 11px; color: #047857; font-weight: bold; }
+
+/* Современная нижняя навигация с вынесенной круглой кнопкой */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 68px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 40;
+  padding: 0 16px;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 3px;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+}
+
+.nav-item.active {
+  color: #10b981;
+  font-weight: 700;
+}
+
+.nav-icon-svg {
+  width: 22px;
+  height: 22px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* Центральная акцентная круглая кнопка Дневник */
+.nav-center-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.nav-fab-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: 3px solid #fff;
+  box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -24px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.nav-fab-btn:active {
+  transform: scale(0.92);
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+}
+
+.nav-fab-btn svg {
+  width: 24px;
+  height: 24px;
+  stroke: #fff;
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.nav-fab-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: #10b981;
+  margin-top: 2px;
+}
+
+/* Карточки рецептов */
+.recipe-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+.recipe-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.recipe-title { font-size: 15px; font-weight: 700; color: #1e293b; }
+.recipe-author { font-size: 11px; color: #64748b; margin-top: 2px; }
+.recipe-pills { display: flex; gap: 8px; margin: 8px 0; }
+.recipe-pill { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 10px; font-size: 12px; font-weight: 700; color: #047857; }
+.recipe-actions { display: flex; gap: 6px; margin-top: 10px; border-top: 1px solid #f1f5f9; padding-top: 8px; }
+.recipe-btn-sm { flex: 1; padding: 8px; border-radius: 10px; font-size: 11px; font-weight: 700; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; touch-action: manipulation; }
