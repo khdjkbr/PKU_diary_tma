@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>ФКУ Дневник</title>
+  <!-- Telegram Web App SDK -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- Tailwind CSS для стилей -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide иконки -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    body {
+      background-color: var(--tg-theme-bg-color, #f8fafc);
+      color: var(--tg-theme-text-color, #0f172a);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+  </style>
+</head>
+<body class="pb-24">
+
+  <!-- Шапка -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-10 px-4 py-3 shadow-sm flex items-center justify-between">
+    <div>
+      <h1 class="text-lg font-bold text-slate-800 flex items-center gap-1.5">
+        <i data-lucide="heart-pulse" class="w-5 h-5 text-emerald-500"></i>
+        ФКУ Дневник
+      </h1>
+      <p id="currentDateText" class="text-xs text-slate-500 font-medium"></p>
+    </div>
+    <button onclick="openSettingsModal()" class="p-2 text-slate-500 hover:text-slate-700 bg-slate-100 rounded-full">
+      <i data-lucide="settings" class="w-5 h-5"></i>
+    </button>
+  </header>
+
+  <main class="max-w-md mx-auto p-4 space-y-4">
+
+    <!-- Карточка суточного баланса -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-3">
+      <div class="flex justify-between items-center">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Фенилаланин (Фа)</span>
+        <span id="pheStatusBadge" class="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">В норме</span>
+      </div>
+
+      <div class="flex items-baseline justify-between">
+        <div>
+          <span id="consumedPheText" class="text-3xl font-extrabold text-slate-900">0</span>
+          <span class="text-sm font-medium text-slate-500">/ <span id="limitPheText">300</span> мг</span>
+        </div>
+        <div class="text-right">
+          <span class="text-xs text-slate-400 block">Осталось</span>
+          <span id="remainingPheText" class="text-lg font-bold text-emerald-600">300 мг</span>
+        </div>
+      </div>
+
+      <!-- Прогресс-бар -->
+      <div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden">
+        <div id="pheProgressBar" class="bg-emerald-500 h-full transition-all duration-300 rounded-full" style="width: 0%;"></div>
+      </div>
+
+      <div class="flex justify-between text-xs text-slate-500 pt-1 border-t border-slate-50">
+        <span>Естественный белок: <b id="consumedProteinText" class="text-slate-800">0.0</b> г</span>
+        <span>Норма: <span id="limitProteinText">6.0</span> г</span>
+      </div>
+    </div>
+
+    <!-- Трекер аминокислотной смеси (АКС) -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-2">
+      <div class="flex justify-between items-center">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Прием смеси (АКС)</span>
+        <span id="aksProgressText" class="text-xs font-bold text-blue-600">0 / 4 порций</span>
+      </div>
+      <div class="grid grid-cols-4 gap-2 pt-1" id="aksButtonsContainer">
+        <!-- Кнопки порций АКС генерируются скриптом -->
+      </div>
+    </div>
+
+    <!-- Блоки приемов пищи -->
+    <div class="space-y-3">
+      <!-- Завтрак -->
+      <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 space-y-2">
+        <div class="flex justify-between items-center px-1">
+          <div class="flex items-center gap-1.5 font-semibold text-slate-800 text-sm">
+            <i data-lucide="sun" class="w-4 h-4 text-amber-500"></i> Завтрак
+          </div>
+          <span id="breakfastTotalPhe" class="text-xs font-medium text-slate-500">0 мг Фа</span>
+        </div>
+        <div id="breakfastList" class="space-y-1.5"></div>
+        <button onclick="openAddModal('Завтрак')" class="w-full py-1.5 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-medium rounded-lg flex items-center justify-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Добавить в завтрак
+        </button>
+      </div>
+
+      <!-- Обед -->
+      <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 space-y-2">
+        <div class="flex justify-between items-center px-1">
+          <div class="flex items-center gap-1.5 font-semibold text-slate-800 text-sm">
+            <i data-lucide="utensils" class="w-4 h-4 text-orange-500"></i> Обед
+          </div>
+          <span id="lunchTotalPhe" class="text-xs font-medium text-slate-500">0 мг Фа</span>
+        </div>
+        <div id="lunchList" class="space-y-1.5"></div>
+        <button onclick="openAddModal('Обед')" class="w-full py-1.5 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-medium rounded-lg flex items-center justify-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Добавить в обед
+        </button>
+      </div>
+
+      <!-- Ужин -->
+      <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 space-y-2">
+        <div class="flex justify-between items-center px-1">
+          <div class="flex items-center gap-1.5 font-semibold text-slate-800 text-sm">
+            <i data-lucide="moon" class="w-4 h-4 text-indigo-500"></i> Ужин
+          </div>
+          <span id="dinnerTotalPhe" class="text-xs font-medium text-slate-500">0 мг Фа</span>
+        </div>
+        <div id="dinnerList" class="space-y-1.5"></div>
+        <button onclick="openAddModal('Ужин')" class="w-full py-1.5 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-medium rounded-lg flex items-center justify-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Добавить в ужин
+        </button>
+      </div>
+
+      <!-- Перекус -->
+      <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-100 space-y-2">
+        <div class="flex justify-between items-center px-1">
+          <div class="flex items-center gap-1.5 font-semibold text-slate-800 text-sm">
+            <i data-lucide="apple" class="w-4 h-4 text-rose-500"></i> Перекус
+          </div>
+          <span id="snackTotalPhe" class="text-xs font-medium text-slate-500">0 мг Фа</span>
+        </div>
+        <div id="snackList" class="space-y-1.5"></div>
+        <button onclick="openAddModal('Перекус')" class="w-full py-1.5 text-xs text-emerald-600 bg-emerald-50 hover:bg-emerald-100 font-medium rounded-lg flex items-center justify-center gap-1">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Добавить в перекус
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <!-- Модальное окно добавления продукта -->
+  <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div class="bg-white w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base" id="modalMealTitle">Добавить продукт</h3>
+        <button onclick="closeAddModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-full">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3">
+        <!-- Выбор продукта из базы -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Поиск продукта</label>
+          <select id="productSelect" onchange="onProductSelectChange()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <option value="custom">-- Ручной ввод / Свой продукт --</option>
+          </select>
+        </div>
+
+        <!-- Название (если ручной ввод) -->
+        <div id="customNameBlock">
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Название блюда / продукта</label>
+          <input type="text" id="foodNameInput" placeholder="Например: Кабачок тушеный" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <!-- Содержание Фа на 100 г -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Фа на 100 г (мг)</label>
+            <input type="number" id="phePer100Input" placeholder="30" oninput="calculatePreview()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+          <!-- Содержание белка на 100 г -->
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 mb-1">Белок на 100 г (г)</label>
+            <input type="number" step="0.1" id="proteinPer100Input" placeholder="0.6" oninput="calculatePreview()" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        </div>
+
+        <!-- Вес порции -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Вес съеденной порции (в граммах)</label>
+          <input type="number" id="weightInput" placeholder="100" oninput="calculatePreview()" class="w-full p-3 bg-emerald-50/50 border-2 border-emerald-200 rounded-xl text-base font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <!-- Итоговый расчет -->
+        <div class="bg-slate-50 p-3 rounded-xl border border-slate-100 flex justify-between items-center">
+          <span class="text-xs font-medium text-slate-500">В этой порции:</span>
+          <div class="text-right">
+            <span id="previewPhe" class="text-base font-extrabold text-emerald-600">0 мг Фа</span>
+            <span class="text-xs text-slate-400 block"><span id="previewProtein">0.0</span> г белка</span>
+          </div>
+        </div>
+
+        <button onclick="saveFoodEntry()" class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-xl shadow-sm">
+          Сохранить в дневник
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно настроек нормы -->
+  <div id="settingsModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-2xl p-5 space-y-4">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="font-bold text-slate-800 text-base">Настройки норм</h3>
+        <button onclick="closeSettingsModal()" class="p-1 text-slate-400 hover:text-slate-600 rounded-full">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Суточная норма Фа (мг)</label>
+          <input type="number" id="settingDailyPhe" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-500 mb-1">Количество порций АКС в день</label>
+          <input type="number" id="settingAksPortions" class="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm">
+        </div>
+        <button onclick="saveSettings()" class="w-full py-2.5 bg-emerald-500 text-white font-bold rounded-xl">
+          Сохранить
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Инициализация Telegram WebApp
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.expand();
+      tg.ready();
+    }
+
+    // Базовый справочник популярных продуктов (мг Фа и г белка на 100 г)
+    const FOOD_DATABASE = [
+      { name: "Яблоко (свежее)", phe: 15, protein: 0.4 },
+      { name: "Банан", phe: 45, protein: 1.1 },
+      { name: "Огурец (свежий)", phe: 20, protein: 0.8 },
+      { name: "Помидор (свежий)", phe: 25, protein: 0.9 },
+      { name: "Кабачок (свежий)", phe: 30, protein: 0.6 },
+      { name: "Картофель (отварной)", phe: 85, protein: 2.0 },
+      { name: "Морковь", phe: 35, protein: 1.3 },
+      { name: "Капуста белокочанная", phe: 45, protein: 1.8 },
+      { name: "МакМастер: Вермишель н/б", phe: 15, protein: 0.5 },
+      { name: "МакМастер: Мука безбелковая", phe: 10, protein: 0.3 },
+      { name: "Balviten: Хлеб малобелковый", phe: 20, protein: 0.6 },
+      { name: "Саго крупа", phe: 12, protein: 0.3 }
+    ];
+
+    // Хранилище данных (в LocalStorage)
+    let appData = {
+      settings: { dailyPhe: 300, aksPortions: 4 },
+      today: new Date().toISOString().split('T')[0],
+      aks: [false, false, false, false],
+      entries: []
+    };
+
+    function loadData() {
+      const saved = localStorage.getItem('pku_diary_data');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed.today === new Date().toISOString().split('T')[0]) {
+            appData = parsed;
+          } else {
+            // Новый день - обновляем дату и сбрасываем приемы АКС и еды
+            appData.today = new Date().toISOString().split('T')[0];
+            appData.aks = new Array(appData.settings.aksPortions).fill(false);
+            appData.entries = [];
+          }
+        } catch(e){}
+      }
+      populateProductSelect();
+      renderAll();
+    }
+
+    function saveData() {
+      localStorage.setItem('pku_diary_data', JSON.stringify(appData));
+      renderAll();
+    }
+
+    function populateProductSelect() {
+      const select = document.getElementById('productSelect');
+      select.innerHTML = '<option value="custom">-- Ручной ввод / Свой продукт --</option>';
+      FOOD_DATABASE.forEach((item, index) => {
+        const opt = document.createElement('option');
+        opt.value = index;
+        opt.textContent = `${item.name} (${item.phe} мг Фа / 100г)`;
+        select.appendChild(opt);
+      });
+    }
+
+    function onProductSelectChange() {
+      const val = document.getElementById('productSelect').value;
+      if (val === 'custom') {
+        document.getElementById('customNameBlock').classList.remove('hidden');
+        document.getElementById('foodNameInput').value = '';
+        document.getElementById('phePer100Input').value = '';
+        document.getElementById('proteinPer100Input').value = '';
+      } else {
+        const item = FOOD_DATABASE[parseInt(val)];
+        document.getElementById('customNameBlock').classList.add('hidden');
+        document.getElementById('foodNameInput').value = item.name;
+        document.getElementById('phePer100Input').value = item.phe;
+        document.getElementById('proteinPer100Input').value = item.protein;
+      }
+      calculatePreview();
+    }
+
+    function calculatePreview() {
+      const weight = parseFloat(document.getElementById('weightInput').value) || 0;
+      let phe100 = parseFloat(document.getElementById('phePer100Input').value) || 0;
+      let prot100 = parseFloat(document.getElementById('proteinPer100Input').value) || 0;
+
+      // Если ввели белок, но не ввели Фа (стандарт: 1г белка ≈ 50мг Фа)
+      if (prot100 > 0 && phe100 === 0) {
+        phe100 = prot100 * 50;
+        document.getElementById('phePer100Input').value = Math.round(phe100);
+      }
+
+      const totalPhe = Math.round((weight * phe100) / 100);
+      const totalProtein = ((weight * prot100) / 100).toFixed(2);
+
+      document.getElementById('previewPhe').textContent = `${totalPhe} мг Фа`;
+      document.getElementById('previewProtein').textContent = totalProtein;
+    }
+
+    let activeMealType = 'Завтрак';
+
+    function openAddModal(mealType) {
+      activeMealType = mealType;
+      document.getElementById('modalMealTitle').textContent = `Добавить в ${mealType.toLowerCase()}`;
+      document.getElementById('productSelect').value = 'custom';
+      onProductSelectChange();
+      document.getElementById('weightInput').value = '';
+      document.getElementById('previewPhe').textContent = '0 мг Фа';
+      document.getElementById('previewProtein').textContent = '0.0';
+      document.getElementById('addModal').classList.remove('hidden');
+    }
+
+    function closeAddModal() {
+      document.getElementById('addModal').classList.add('hidden');
+    }
+
+    function saveFoodEntry() {
+      const name = document.getElementById('foodNameInput').value.trim() || 'Продукт';
+      const weight = parseFloat(document.getElementById('weightInput').value) || 0;
+      const phe100 = parseFloat(document.getElementById('phePer100Input').value) || 0;
+      const prot100 = parseFloat(document.getElementById('proteinPer100Input').value) || 0;
+
+      if (weight <= 0) {
+        alert('Пожалуйста, укажите вес в граммах');
+        return;
+      }
+
+      const totalPhe = Math.round((weight * phe100) / 100);
+      const totalProtein = parseFloat(((weight * prot100) / 100).toFixed(2));
+
+      appData.entries.push({
+        id: Date.now(),
+        meal: activeMealType,
+        name: name,
+        weight: weight,
+        phe: totalPhe,
+        protein: totalProtein
+      });
+
+      saveData();
+      closeAddModal();
+    }
+
+    function deleteEntry(id) {
+      appData.entries = appData.entries.filter(e => e.id !== id);
+      saveData();
+    }
+
+    function toggleAks(index) {
+      appData.aks[index] = !appData.aks[index];
+      saveData();
+    }
+
+    function renderAll() {
+      // Дата
+      const options = { weekday: 'long', day: 'numeric', month: 'long' };
+      document.getElementById('currentDateText').textContent = new Date().toLocaleDateString('ru-RU', options);
+
+      // Нормы
+      const limitPhe = appData.settings.dailyPhe;
+      const limitProtein = (limitPhe / 50).toFixed(1);
+      document.getElementById('limitPheText').textContent = limitPhe;
+      document.getElementById('limitProteinText').textContent = limitProtein;
+
+      // Суммарные расчеты
+      let consumedPhe = 0;
+      let consumedProtein = 0;
+      const mealSums = { 'Завтрак': 0, 'Обед': 0, 'Ужин': 0, 'Перекус': 0 };
+
+      // Очистка списков
+      ['breakfastList', 'lunchList', 'dinnerList', 'snackList'].forEach(id => {
+        document.getElementById(id).innerHTML = '';
+      });
+
+      appData.entries.forEach(item => {
+        consumedPhe += item.phe;
+        consumedProtein += item.protein;
+        mealSums[item.meal] += item.phe;
+
+        const listId = item.meal === 'Завтрак' ? 'breakfastList' :
+                       item.meal === 'Обед' ? 'lunchList' :
+                       item.meal === 'Ужин' ? 'dinnerList' : 'snackList';
+
+        const row = document.createElement('div');
+        row.className = 'flex justify-between items-center bg-slate-50 px-3 py-2 rounded-xl text-xs border border-slate-100';
+        row.innerHTML = `
+          <div>
+            <div class="font-semibold text-slate-800">${item.name}</div>
+            <div class="text-slate-400">${item.weight} г (${item.protein} г б.)</div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-emerald-700">${item.phe} мг</span>
+            <button onclick="deleteEntry(${item.id})" class="text-slate-300 hover:text-rose-500 p-1">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        `;
+        document.getElementById(listId).appendChild(row);
+      });
+
+      document.getElementById('consumedPheText').textContent = consumedPhe;
+      document.getElementById('consumedProteinText').textContent = consumedProtein.toFixed(1);
+
+      document.getElementById('breakfastTotalPhe').textContent = `${mealSums['Завтрак']} мг Фа`;
+      document.getElementById('lunchTotalPhe').textContent = `${mealSums['Обед']} мг Фа`;
+      document.getElementById('dinnerTotalPhe').textContent = `${mealSums['Ужин']} мг Фа`;
+      document.getElementById('snackTotalPhe').textContent = `${mealSums['Перекус']} мг Фа`;
+
+      // Остаток и прогресс
+      const remaining = limitPhe - consumedPhe;
+      const remainingEl = document.getElementById('remainingPheText');
+      const badgeEl = document.getElementById('pheStatusBadge');
+      const barEl = document.getElementById('pheProgressBar');
+
+      const percent = Math.min(Math.round((consumedPhe / limitPhe) * 100), 100);
+      barEl.style.width = `${percent}%`;
+
+      if (remaining >= 0) {
+        remainingEl.textContent = `${remaining} мг`;
+        remainingEl.className = 'text-lg font-bold text-emerald-600';
+        badgeEl.textContent = 'В норме';
+        badgeEl.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700';
+        barEl.className = 'bg-emerald-500 h-full transition-all duration-300 rounded-full';
+      } else {
+        remainingEl.textContent = `Превышение на ${Math.abs(remaining)} мг`;
+        remainingEl.className = 'text-sm font-bold text-rose-600';
+        badgeEl.textContent = 'Превышено!';
+        badgeEl.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-rose-100 text-rose-700';
+        barEl.className = 'bg-rose-500 h-full transition-all duration-300 rounded-full';
+      }
+
+      // Отрисовка АКС
+      const aksContainer = document.getElementById('aksButtonsContainer');
+      aksContainer.innerHTML = '';
+      let aksTakenCount = 0;
+      appData.aks.forEach((taken, idx) => {
+        if (taken) aksTakenCount++;
+        const btn = document.createElement('button');
+        btn.onclick = () => toggleAks(idx);
+        btn.className = `py-2 rounded-xl text-xs font-bold transition-all ${
+          taken ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'
+        }`;
+        btn.textContent = `${idx + 1}-я порция`;
+        aksContainer.appendChild(btn);
+      });
+      document.getElementById('aksProgressText').textContent = `${aksTakenCount} / ${appData.aks.length} порций`;
+
+      lucide.createIcons();
+    }
+
+    function openSettingsModal() {
+      document.getElementById('settingDailyPhe').value = appData.settings.dailyPhe;
+      document.getElementById('settingAksPortions').value = appData.settings.aksPortions;
+      document.getElementById('settingsModal').classList.remove('hidden');
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settingsModal').classList.add('hidden');
+    }
+
+    function saveSettings() {
+      const phe = parseInt(document.getElementById('settingDailyPhe').value) || 300;
+      const aksCount = parseInt(document.getElementById('settingAksPortions').value) || 4;
+      appData.settings.dailyPhe = phe;
+      if (appData.settings.aksPortions !== aksCount) {
+        appData.settings.aksPortions = aksCount;
+        appData.aks = new Array(aksCount).fill(false);
+      }
+      saveData();
+      closeSettingsModal();
+    }
+
+    // Старт
+    loadData();
+  </script>
+</body>
+</html>
