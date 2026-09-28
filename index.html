@@ -6,8 +6,8 @@
   <title>ФКУ Компас</title>
   
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="config.js?v=mobile-shell-1"></script>
-  <link rel="stylesheet" href="styles.css?v=mobile-shell-1">
+  <script src="config.js?v=wiki-2"></script>
+  <link rel="stylesheet" href="styles.css?v=wiki-2">
 </head>
 <body>
 
@@ -146,6 +146,53 @@
     </div>
   </div>
 
+  <!-- РАЗДЕЛ 4: ВИКИ -->
+  <div id="viewWiki" class="app-view" style="display: none;">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-title">📚 Вики</div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="wiki-card">
+        <div class="wiki-card-icon">🧬</div>
+        <div>
+          <h3>Что такое ФА</h3>
+          <p>Фенилаланин — аминокислота из белковых продуктов. При ФКУ важно учитывать его количество за день и сравнивать с индивидуальной нормой.</p>
+        </div>
+      </div>
+
+      <div class="wiki-card">
+        <div class="wiki-card-icon">⚖️</div>
+        <div>
+          <h3>Как считать порцию</h3>
+          <p>Берите значение ФА на 100 г, умножайте на вес порции и делите на 100. Например: 30 мг × 80 г / 100 = 24 мг ФА.</p>
+        </div>
+      </div>
+
+      <div class="wiki-card">
+        <div class="wiki-card-icon">🥣</div>
+        <div>
+          <h3>Смесь АКС</h3>
+          <p>Отмечайте каждую порцию смеси в течение дня. Так легче видеть, что дневной режим выполнен и ничего не забыто.</p>
+        </div>
+      </div>
+
+      <div class="wiki-card">
+        <div class="wiki-card-icon">📊</div>
+        <div>
+          <h3>КБЖУ и ГИ</h3>
+          <p>Калории, белки, жиры, углеводы и гликемический индекс помогают оценивать продукт шире, но при ФКУ главным остается контроль ФА и натурального белка.</p>
+        </div>
+      </div>
+
+      <div class="wiki-note">
+        Информация в разделе справочная. Индивидуальные нормы и лечебное питание нужно согласовывать с врачом или диетологом.
+      </div>
+    </div>
+  </div>
+
   <!-- НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ -->
   <nav class="bottom-nav">
     <button class="nav-item" id="navBtnRecipes" onclick="switchView('recipes')">
@@ -171,6 +218,14 @@
         </svg>
       </div>
       <span class="nav-fab-label" id="navFabLabel">Дневник</span>
+    </button>
+
+    <button class="nav-item" id="navBtnWiki" onclick="switchView('wiki')">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24">
+        <path d="M12 6.5A5.5 5.5 0 0 0 6.5 1H4a2 2 0 0 0-2 2v15a2 2 0 0 0 2 2h2.5A5.5 5.5 0 0 1 12 22Z"/>
+        <path d="M12 6.5A5.5 5.5 0 0 1 17.5 1H20a2 2 0 0 1 2 2v15a2 2 0 0 1-2 2h-2.5A5.5 5.5 0 0 0 12 22Z"/>
+      </svg>
+      <span>Вики</span>
     </button>
 
     <button class="nav-item" id="navBtnProfile" onclick="openModal('settingsModal')">
@@ -350,7 +405,7 @@
       <button class="btn-primary" onclick="saveSettings()">Сохранить настройки</button>
     </div>
   </div>
-  <script src="products.js?v=mobile-shell-1"></script>
-  <script src="app.js?v=mobile-shell-1"></script>
+  <script src="products.js?v=wiki-2"></script>
+  <script src="app.js?v=wiki-2"></script>
 </body>
 </html>

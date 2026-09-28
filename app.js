@@ -113,6 +113,7 @@
       const isDiary = (viewName === 'diary');
       const isRecipes = (viewName === 'recipes');
       const isProducts = (viewName === 'products');
+      const isWiki = (viewName === 'wiki');
       
       const vDiary = document.getElementById('viewDiary');
       if (vDiary) vDiary.style.display = isDiary ? 'block' : 'none';
@@ -122,6 +123,9 @@
 
       const vProducts = document.getElementById('viewProducts');
       if (vProducts) vProducts.style.display = isProducts ? 'block' : 'none';
+
+      const vWiki = document.getElementById('viewWiki');
+      if (vWiki) vWiki.style.display = isWiki ? 'block' : 'none';
 
       const fabLabel = document.getElementById('navFabLabel');
       if (fabLabel) fabLabel.style.color = isDiary ? '#10b981' : '#64748b';
@@ -134,6 +138,9 @@
 
       const btnProducts = document.getElementById('navBtnProducts');
       if (btnProducts && btnProducts.classList) btnProducts.classList.toggle('active', isProducts);
+
+      const btnWiki = document.getElementById('navBtnWiki');
+      if (btnWiki && btnWiki.classList) btnWiki.classList.toggle('active', isWiki);
 
       const btnProf = document.getElementById('navBtnProfile');
       if (btnProf && btnProf.classList) btnProf.classList.remove('active');
@@ -148,6 +155,22 @@
       }
     }
     window.switchView = switchView;
+
+    function setupBottomNavigation() {
+      const handlers = {
+        navBtnRecipes: () => switchView('recipes'),
+        navBtnProducts: () => switchView('products'),
+        navBtnDiary: () => switchView('diary'),
+        navBtnWiki: () => switchView('wiki'),
+        navBtnProfile: () => openModal('settingsModal')
+      };
+
+      Object.entries(handlers).forEach(([id, handler]) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        el.onclick = handler;
+      });
+    }
 
     function getAllProducts() {
       const custom = userCustomProducts.map((p, idx) => ({ ...p, cat: 'custom', isCustom: true, customIndex: idx }));
@@ -254,6 +277,7 @@
         if (profId) profId.textContent = currentTelegramId;
 
         setCloudStatus(hasSupabase ? 'pending' : 'off', hasSupabase ? 'Синхронизация...' : 'Облачная синхронизация не настроена');
+        setupBottomNavigation();
         filterFoodList();
         updateDateUI();
         checkTelegramDeepLink();
