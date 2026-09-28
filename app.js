@@ -13,6 +13,8 @@
     const tgUser = tg?.initDataUnsafe?.user || { id: 99999999, first_name: "Пользователь" };
     const currentTelegramId = tgUser.id;
     let userCustomProducts = [];
+    let serverProducts = [];
+    let wikiArticles = [];
     let allRecipes = [];
     let currentRecipeIngredients = [];
     let selectedRecipeForQuickAdd = null;
@@ -174,7 +176,58 @@
 
     function getAllProducts() {
       const custom = userCustomProducts.map((p, idx) => ({ ...p, cat: 'custom', isCustom: true, customIndex: idx }));
-      return [...custom, ...(window.FOOD_BASE || [])];
+      const base = serverProducts.length > 0 ? serverProducts : (window.FOOD_BASE || []);
+      return [...custom, ...base];
+    }
+
+    async function loadProductsFromSupabase() {
+      if (!hasSupabase) return;
+      try {
+        const data = await supabaseRequest('/rest/v1/products?is_active=eq.true&order=sort_order.asc,name.asc');
+        if (Array.isArray(data) && data.length > 0) {
+          serverProducts = data.map(item => ({
+            ...item,
+            prot: item.prot ?? item.protein ?? 0
+          }));
+          filterFoodList();
+          if (document.getElementById('viewProducts')?.style.display === 'block') {
+            renderProductsPage();
+          }
+        }
+      } catch(e) {
+        console.error('loadProductsFromSupabase error:', e);
+      }
+    }
+
+    async function loadWikiFromSupabase() {
+      if (!hasSupabase) return;
+      try {
+        const data = await supabaseRequest('/rest/v1/wiki_articles?is_published=eq.true&order=sort_order.asc,title.asc');
+        if (Array.isArray(data) && data.length > 0) {
+          wikiArticles = data;
+          renderWikiArticles();
+        }
+      } catch(e) {
+        console.error('loadWikiFromSupabase error:', e);
+      }
+    }
+
+    function renderWikiArticles() {
+      const container = document.getElementById('wikiContainer');
+      if (!container || wikiArticles.length === 0) return;
+      container.innerHTML = wikiArticles.map(article => `
+        <div class="wiki-card">
+          <div class="wiki-card-icon">${escapeHtml(article.icon || '📚')}</div>
+          <div>
+            <h3>${escapeHtml(article.title)}</h3>
+            <p>${escapeHtml(article.body)}</p>
+          </div>
+        </div>
+      `).join('') + `
+        <div class="wiki-note">
+          Информация в разделе справочная. Индивидуальные нормы и лечебное питание нужно согласовывать с врачом или диетологом.
+        </div>
+      `;
     }
 
     function updateDateUI() {
@@ -279,6 +332,8 @@
         setCloudStatus(hasSupabase ? 'pending' : 'off', hasSupabase ? 'Синхронизация...' : 'Облачная синхронизация не настроена');
         setupBottomNavigation();
         filterFoodList();
+        loadProductsFromSupabase();
+        loadWikiFromSupabase();
         updateDateUI();
         checkTelegramDeepLink();
       } catch(e){

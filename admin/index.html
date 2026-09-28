@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ФКУ Компас — админ</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="../config.js?v=admin-1"></script>
+  <link rel="stylesheet" href="admin.css?v=admin-1">
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand">
+      <span>🥑</span>
+      <div>
+        <b>ФКУ Компас</b>
+        <small>Админ-панель</small>
+      </div>
+    </div>
+
+    <nav class="tabs">
+      <button class="tab active" data-section="dashboard">Обзор</button>
+      <button class="tab" data-section="users">Пользователи</button>
+      <button class="tab" data-section="products">Продукты</button>
+      <button class="tab" data-section="wiki">Вики</button>
+      <button class="tab" data-section="diary">Дневники</button>
+      <button class="tab" data-section="recipes">Рецепты</button>
+    </nav>
+  </aside>
+
+  <main class="admin-shell">
+    <header class="topbar">
+      <div>
+        <h1 id="sectionTitle">Обзор</h1>
+        <p id="sectionSubtitle">Состояние базы и быстрые показатели</p>
+      </div>
+      <div class="status" id="adminStatus">Проверка доступа...</div>
+    </header>
+
+    <section class="notice" id="accessNotice" hidden></section>
+
+    <section class="section active" id="dashboardSection">
+      <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+    <section class="section" id="usersSection">
+      <div class="toolbar">
+        <input id="usersSearch" class="control" placeholder="Поиск по имени или Telegram ID">
+        <button class="btn" data-refresh="users">Обновить</button>
+      </div>
+      <div class="table-wrap"><table id="usersTable"></table></div>
+    </section>
+
+    <section class="section" id="productsSection">
+      <div class="toolbar">
+        <input id="productsSearch" class="control" placeholder="Поиск продукта">
+        <button class="btn primary" data-create="products">+ Продукт</button>
+        <button class="btn" data-refresh="products">Обновить</button>
+      </div>
+      <div class="table-wrap"><table id="productsTable"></table></div>
+    </section>
+
+    <section class="section" id="wikiSection">
+      <div class="toolbar">
+        <input id="wikiSearch" class="control" placeholder="Поиск статьи">
+        <button class="btn primary" data-create="wiki">+ Статья</button>
+        <button class="btn" data-refresh="wiki">Обновить</button>
+      </div>
+      <div class="table-wrap"><table id="wikiTable"></table></div>
+    </section>
+
+    <section class="section" id="diarySection">
+      <div class="toolbar">
+        <input id="diaryUserFilter" class="control" placeholder="Telegram ID">
+        <input id="diaryDateFilter" class="control" type="date">
+        <button class="btn" data-refresh="diary">Показать</button>
+      </div>
+      <div class="table-wrap"><table id="diaryTable"></table></div>
+    </section>
+
+    <section class="section" id="recipesSection">
+      <div class="toolbar">
+        <input id="recipesSearch" class="control" placeholder="Поиск рецепта">
+        <button class="btn" data-refresh="recipes">Обновить</button>
+      </div>
+      <div class="table-wrap"><table id="recipesTable"></table></div>
+    </section>
+  </main>
+
+  <div class="modal" id="editModal" hidden>
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h2 id="modalTitle">Редактирование</h2>
+        <button class="icon-btn" id="modalClose">×</button>
+      </div>
+      <form id="editForm" class="form-grid"></form>
+      <div class="modal-actions">
+        <button class="btn danger" id="deleteBtn" type="button">Удалить</button>
+        <span></span>
+        <button class="btn" id="cancelBtn" type="button">Отмена</button>
+        <button class="btn primary" id="saveBtn" type="button">Сохранить</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="admin.js?v=admin-1"></script>
+</body>
+</html>
