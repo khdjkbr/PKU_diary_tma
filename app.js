@@ -1,4 +1,4 @@
-// app.js — Логика приложения ФКУ Дневник
+// app.js — Логика приложения ФКУ Компас
 
 // 1. ИНИЦИАЛИЗАЦИЯ КЛЮЧЕЙ И TELEGRAM
     const DB_URL = (typeof window.SUPABASE_URL !== 'undefined') ? window.SUPABASE_URL : '';
@@ -20,6 +20,8 @@
     let currentFilteredList = [];
     let currentDateObj = new Date();
     let currentCategory = 'all';
+    let currentProductCategory = 'all';
+    let currentExpandedProductIndex = null;
     let currentRecipeFilter = 'all';
 
     let appData = {
@@ -109,25 +111,40 @@
     // 3. ПЕРЕКЛЮЧЕНИЕ ЭКРАНОВ
     function switchView(viewName) {
       const isDiary = (viewName === 'diary');
+      const isRecipes = (viewName === 'recipes');
+      const isProducts = (viewName === 'products');
       
       const vDiary = document.getElementById('viewDiary');
       if (vDiary) vDiary.style.display = isDiary ? 'block' : 'none';
 
       const vRecipes = document.getElementById('viewRecipes');
-      if (vRecipes) vRecipes.style.display = isDiary ? 'none' : 'block';
+      if (vRecipes) vRecipes.style.display = isRecipes ? 'block' : 'none';
+
+      const vProducts = document.getElementById('viewProducts');
+      if (vProducts) vProducts.style.display = isProducts ? 'block' : 'none';
 
       const fabLabel = document.getElementById('navFabLabel');
       if (fabLabel) fabLabel.style.color = isDiary ? '#10b981' : '#64748b';
 
+      const btnDiary = document.getElementById('navBtnDiary');
+      if (btnDiary && btnDiary.classList) btnDiary.classList.toggle('active', isDiary);
+
       const btnRec = document.getElementById('navBtnRecipes');
-      if (btnRec && btnRec.classList) btnRec.classList.toggle('active', !isDiary);
+      if (btnRec && btnRec.classList) btnRec.classList.toggle('active', isRecipes);
+
+      const btnProducts = document.getElementById('navBtnProducts');
+      if (btnProducts && btnProducts.classList) btnProducts.classList.toggle('active', isProducts);
 
       const btnProf = document.getElementById('navBtnProfile');
       if (btnProf && btnProf.classList) btnProf.classList.remove('active');
 
-      if (viewName === 'recipes') {
+      if (isRecipes) {
         renderRecipes();
         loadRecipesFromSupabase();
+      }
+
+      if (isProducts) {
+        renderProductsPage();
       }
     }
     window.switchView = switchView;
@@ -671,7 +688,110 @@
       }
     }
 
-    // 5. ДНЕВНИК И ПРОДУКТЫ
+    // 5. СПРАВОЧНИК ПРОДУКТОВ
+    const productCategoryNames = {
+      veg: 'Овощи',
+      fruit: 'Фрукты',
+      grain: 'Зерновые',
+      dairy: 'Молочные',
+      protein: 'Белковые',
+      special: 'Спецпродукты',
+      sweet: 'Сладости',
+      drink: 'Напитки',
+      custom: 'Мои продукты'
+    };
+
+    function getProductValue(item, key, fallback = '—') {
+      const value = item[key];
+      return value === undefined || value === null || value === '' ? fallback : value;
+    }
+
+    function getProductProtein(item) {
+      return item.protein ?? item.prot ?? 0;
+    }
+
+    function getProductListForPage() {
+      const query = (document.getElementById('productSearchInput')?.value || '').toLowerCase().trim();
+      return getAllProducts().filter(item => {
+        const matchesCat = currentProductCategory === 'all' || item.cat === currentProductCategory;
+        const matchesQuery = !query || item.name.toLowerCase().includes(query);
+        return matchesCat && matchesQuery;
+      });
+    }
+
+    function setProductCategory(cat, btn) {
+      currentProductCategory = cat;
+      currentExpandedProductIndex = null;
+      document.querySelectorAll('#productCategoryChips .chip').forEach(c => c.classList.remove('active'));
+      if (btn && btn.classList) btn.classList.add('active');
+      renderProductsPage();
+    }
+    window.setProductCategory = setProductCategory;
+
+    function filterProductsPage() {
+      currentExpandedProductIndex = null;
+      renderProductsPage();
+    }
+    window.filterProductsPage = filterProductsPage;
+
+    function toggleProductDetails(index) {
+      currentExpandedProductIndex = currentExpandedProductIndex === index ? null : index;
+      renderProductsPage();
+    }
+    window.toggleProductDetails = toggleProductDetails;
+
+    function renderProductsPage() {
+      const container = document.getElementById('productsContainer');
+      if (!container) return;
+
+      const products = getProductListForPage();
+      if (products.length === 0) {
+        container.innerHTML = '<div class="empty-state">Ничего не найдено</div>';
+        return;
+      }
+
+      let html = '';
+      products.forEach((item, index) => {
+        const isOpen = currentExpandedProductIndex === index;
+        const protein = getProductProtein(item);
+        const catName = productCategoryNames[item.cat] || item.cat || 'Продукт';
+        const kcal = getProductValue(item, 'kcal');
+        const fat = getProductValue(item, 'fat');
+        const carbs = getProductValue(item, 'carbs');
+        const gi = getProductValue(item, 'gi');
+
+        html += `
+          <button class="product-row ${isOpen ? 'expanded' : ''}" onclick="toggleProductDetails(${index})" type="button">
+            <div class="product-row-main">
+              <div>
+                <div class="product-name">${escapeHtml(item.name)}</div>
+                <div class="product-category">${escapeHtml(catName)}</div>
+              </div>
+              <div class="product-summary">
+                <span>${item.phe} мг ФА</span>
+                <span>${protein} г белка</span>
+                <span>${kcal} ккал</span>
+              </div>
+            </div>
+            <div class="product-chevron">${isOpen ? '⌃' : '⌄'}</div>
+            ${isOpen ? `
+              <div class="product-details">
+                <div><span>Ккал</span><b>${kcal}</b></div>
+                <div><span>Белки</span><b>${protein} г</b></div>
+                <div><span>Жиры</span><b>${fat} г</b></div>
+                <div><span>Углеводы</span><b>${carbs} г</b></div>
+                <div><span>ФА</span><b>${item.phe} мг</b></div>
+                <div><span>ГИ</span><b>${gi}</b></div>
+              </div>
+            ` : ''}
+          </button>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    // 6. ДНЕВНИК И ДОБАВЛЕНИЕ ЕДЫ
     function setCategory(cat, btn) {
       currentCategory = cat;
       document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));

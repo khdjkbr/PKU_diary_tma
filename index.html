@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>ФКУ Дневник</title>
+  <title>ФКУ Компас</title>
   
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <script src="config.js"></script>
@@ -17,7 +17,7 @@
   <div id="viewDiary" class="app-view">
     <header class="header">
       <div class="header-top">
-        <div class="header-title">🥑 ФКУ Дневник</div>
+        <div class="header-title">🥑 ФКУ Компас</div>
         <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
       </div>
 
@@ -117,9 +117,37 @@
     </div>
   </div>
 
-  <!-- НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ (Рецепты | Дневник | Профиль) -->
+  <!-- РАЗДЕЛ 3: ПРОДУКТЫ -->
+  <div id="viewProducts" class="app-view" style="display: none;">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-title">🥦 Продукты</div>
+      </div>
+
+      <div class="input-group" style="margin-top: 10px; margin-bottom: 0;">
+        <input type="text" id="productSearchInput" class="input-control" placeholder="🔍 Найти продукт..." oninput="filterProductsPage()">
+      </div>
+
+      <div class="category-chips" id="productCategoryChips" style="margin-top: 10px; margin-bottom: 0;">
+        <button class="chip active" onclick="setProductCategory('all', this)">Все</button>
+        <button class="chip" onclick="setProductCategory('veg', this)">Овощи</button>
+        <button class="chip" onclick="setProductCategory('fruit', this)">Фрукты</button>
+        <button class="chip" onclick="setProductCategory('grain', this)">Зерновые</button>
+        <button class="chip" onclick="setProductCategory('dairy', this)">Молочные</button>
+        <button class="chip" onclick="setProductCategory('protein', this)">Белковые</button>
+        <button class="chip" onclick="setProductCategory('special', this)">Спецпродукты</button>
+        <button class="chip" onclick="setProductCategory('sweet', this)">Сладости</button>
+        <button class="chip" onclick="setProductCategory('drink', this)">Напитки</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <div id="productsContainer"></div>
+    </div>
+  </div>
+
+  <!-- НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ -->
   <nav class="bottom-nav">
-    <!-- 1. Рецепты (Слева) -->
     <button class="nav-item" id="navBtnRecipes" onclick="switchView('recipes')">
       <svg class="nav-icon-svg" viewBox="0 0 24 24">
         <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"/>
@@ -128,17 +156,23 @@
       <span>Рецепты</span>
     </button>
 
-    <!-- 2. Дневник (Главная круглая выходящая кнопка по центру) -->
-    <div class="nav-center-wrap" onclick="switchView('diary')">
+    <button class="nav-item" id="navBtnProducts" onclick="switchView('products')">
+      <svg class="nav-icon-svg" viewBox="0 0 24 24">
+        <path d="M21 8a2 2 0 0 0-2-2h-2.5a3.5 3.5 0 0 0-7 0H5a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2Z"/>
+        <path d="M9 11h6M9 15h4"/>
+      </svg>
+      <span>Продукты</span>
+    </button>
+
+    <button class="nav-center-wrap active" id="navBtnDiary" onclick="switchView('diary')" type="button">
       <div class="nav-fab-btn" id="navFabBtn">
         <svg viewBox="0 0 24 24">
           <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
         </svg>
       </div>
       <span class="nav-fab-label" id="navFabLabel">Дневник</span>
-    </div>
+    </button>
 
-    <!-- 3. Профиль / Настройки (Справа) -->
     <button class="nav-item" id="navBtnProfile" onclick="openModal('settingsModal')">
       <svg class="nav-icon-svg" viewBox="0 0 24 24">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
