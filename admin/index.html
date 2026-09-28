@@ -4,12 +4,29 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ФКУ Компас — админ</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="../config.js?v=admin-1"></script>
-  <link rel="stylesheet" href="admin.css?v=admin-1">
+  <script src="../config.js?v=admin-login-1"></script>
+  <link rel="stylesheet" href="admin.css?v=admin-login-1">
 </head>
 <body>
-  <aside class="sidebar">
+  <section class="login-view" id="loginView">
+    <form class="login-card" id="loginForm">
+      <div class="login-brand">🥑</div>
+      <h1>ФКУ Компас</h1>
+      <p>Вход в админ-панель</p>
+      <label>
+        Логин / email
+        <input id="loginEmail" type="email" autocomplete="username" required>
+      </label>
+      <label>
+        Пароль
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </label>
+      <button class="btn primary" type="submit">Войти</button>
+      <div class="login-error" id="loginError" hidden></div>
+    </form>
+  </section>
+
+  <aside class="sidebar" id="sidebar" hidden>
     <div class="brand">
       <span>🥑</span>
       <div>
@@ -28,13 +45,16 @@
     </nav>
   </aside>
 
-  <main class="admin-shell">
+  <main class="admin-shell" id="adminShell" hidden>
     <header class="topbar">
       <div>
         <h1 id="sectionTitle">Обзор</h1>
         <p id="sectionSubtitle">Состояние базы и быстрые показатели</p>
       </div>
-      <div class="status" id="adminStatus">Проверка доступа...</div>
+      <div class="top-actions">
+        <div class="status" id="adminStatus">Проверка доступа...</div>
+        <button class="btn" id="logoutBtn" type="button">Выйти</button>
+      </div>
     </header>
 
     <section class="notice" id="accessNotice" hidden></section>
@@ -103,6 +123,6 @@
     </div>
   </div>
 
-  <script src="admin.js?v=admin-1"></script>
+  <script src="admin.js?v=admin-login-1"></script>
 </body>
 </html>

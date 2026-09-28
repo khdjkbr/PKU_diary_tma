@@ -1,22 +1,13 @@
 const DB_URL = window.SUPABASE_URL || '';
 const DB_KEY = window.SUPABASE_KEY || '';
-const ADMIN_IDS = (window.ADMIN_TELEGRAM_IDS || []).map(String);
-const tg = window.Telegram?.WebApp;
-
-if (tg) {
-  try { tg.ready(); tg.expand(); } catch(e) {}
-}
-
-const adminUser = tg?.initDataUnsafe?.user || null;
-const adminId = adminUser?.id ? String(adminUser.id) : '';
 const hasSupabase = DB_URL.startsWith('http') && DB_KEY.startsWith('eyJ');
-const hasAdminList = ADMIN_IDS.length > 0;
-const isAllowedAdmin = hasAdminList && ADMIN_IDS.includes(adminId);
+const AUTH_KEY = 'pku_admin_session';
 
 const state = {
   currentSection: 'dashboard',
   rows: {},
-  modal: { table: '', mode: 'create', row: null }
+  modal: { table: '', mode: 'create', row: null },
+  session: loadStoredSession()
 };
 
 const sectionMeta = {
@@ -89,9 +80,60 @@ function showNotice(text) {
 function headers(extra = {}) {
   return {
     apikey: DB_KEY,
-    Authorization: 'Bearer ' + DB_KEY,
+    Authorization: 'Bearer ' + (state.session?.access_token || DB_KEY),
     ...extra
   };
+}
+
+function loadStoredSession() {
+  try {
+    const raw = localStorage.getItem(AUTH_KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (!session?.access_token || !session?.expires_at) return null;
+    if (Date.now() > session.expires_at) {
+      localStorage.removeItem(AUTH_KEY);
+      return null;
+    }
+    return session;
+  } catch(e) {
+    return null;
+  }
+}
+
+function storeSession(data) {
+  const session = {
+    access_token: data.access_token,
+    refresh_token: data.refresh_token,
+    email: data.user?.email || '',
+    expires_at: Date.now() + ((data.expires_in || 3600) - 60) * 1000
+  };
+  localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+  state.session = session;
+}
+
+async function signIn(email, password) {
+  if (!hasSupabase) throw new Error('Supabase is not configured');
+  const res = await fetch(DB_URL + '/auth/v1/token?grant_type=password', {
+    method: 'POST',
+    headers: {
+      apikey: DB_KEY,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ email, password })
+  });
+  if (!res.ok) {
+    const message = await res.text();
+    throw new Error(message || 'Не удалось войти');
+  }
+  const data = await res.json();
+  storeSession(data);
+}
+
+function signOut() {
+  localStorage.removeItem(AUTH_KEY);
+  state.session = null;
+  showLogin();
 }
 
 async function api(path, options = {}) {
@@ -118,18 +160,26 @@ function ensureAccess() {
     showNotice('В config.js нужно указать SUPABASE_URL и SUPABASE_KEY.');
     return false;
   }
-  if (!hasAdminList) {
-    setStatus('warn', 'Нужен ADMIN_TELEGRAM_IDS');
-    showNotice('Добавьте ваш Telegram ID в window.ADMIN_TELEGRAM_IDS в config.js. Сейчас админ-действия заблокированы.');
+  if (!state.session?.access_token) {
+    showLogin();
     return false;
   }
-  if (!isAllowedAdmin) {
-    setStatus('error', 'Нет доступа');
-    showNotice('Откройте админку из Telegram под разрешенным admin ID. Текущий ID: ' + (adminId || 'не определен'));
-    return false;
-  }
-  setStatus('ok', 'Админ: ' + adminId);
+  showAdmin();
+  setStatus('ok', state.session.email || 'Вход выполнен');
   return true;
+}
+
+function showLogin() {
+  $('loginView').hidden = false;
+  $('sidebar').hidden = true;
+  $('adminShell').hidden = true;
+}
+
+function showAdmin() {
+  $('loginView').hidden = true;
+  $('sidebar').hidden = false;
+  $('adminShell').hidden = false;
+  $('accessNotice').hidden = true;
 }
 
 function switchSection(name) {
@@ -361,6 +411,25 @@ function closeModal() {
 }
 
 function setupEvents() {
+  $('loginForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const errorEl = $('loginError');
+    errorEl.hidden = true;
+    errorEl.textContent = '';
+
+    try {
+      await signIn($('loginEmail').value.trim(), $('loginPassword').value);
+      $('loginPassword').value = '';
+      showAdmin();
+      setStatus('ok', state.session.email || 'Вход выполнен');
+      loadDashboard();
+    } catch(e) {
+      errorEl.textContent = 'Не удалось войти. Проверьте логин и пароль.';
+      errorEl.hidden = false;
+      console.error(e);
+    }
+  });
+  $('logoutBtn').addEventListener('click', signOut);
   document.querySelectorAll('.tab').forEach(btn => btn.addEventListener('click', () => switchSection(btn.dataset.section)));
   document.querySelectorAll('[data-refresh]').forEach(btn => btn.addEventListener('click', () => loadSection(btn.dataset.refresh)));
   document.querySelectorAll('[data-create]').forEach(btn => btn.addEventListener('click', () => openEditor(btn.dataset.create)));
