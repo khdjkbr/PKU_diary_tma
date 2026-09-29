@@ -866,13 +866,8 @@
                   <div class="product-category">${escapeHtml(catName)}</div>
                 </div>
               </div>
-              <div class="product-summary">
-                <span>${item.phe} мг ФА</span>
-                <span>${protein} г белка</span>
-                <span>${kcal} ккал</span>
-              </div>
+              <div class="product-chevron">${isOpen ? '⌃' : '⌄'}</div>
             </div>
-            <div class="product-chevron">${isOpen ? '⌃' : '⌄'}</div>
             ${isOpen ? `
               <div class="product-details">
                 <div><span>Ккал</span><b>${kcal}</b></div>
