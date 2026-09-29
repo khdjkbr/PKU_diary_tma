@@ -789,6 +789,39 @@
       return item.protein ?? item.prot ?? 0;
     }
 
+    function getProductImage(item) {
+      return item.image_url || item.image || '';
+    }
+
+    function renderProductSource(item) {
+      const sourceName = item.source_name || 'USDA FoodData Central / FRIDA';
+      const sourceUrl = item.source_url || 'https://fdc.nal.usda.gov/';
+      const giSourceName = item.gi_source_name || 'University of Sydney GI Database';
+      const giSourceUrl = item.gi_source_url || 'https://glycemicindex.com/';
+      const note = item.data_note || 'на 100 г продукта';
+
+      return `
+        <div class="product-source">
+          <span>${escapeHtml(note)}</span>
+          <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(sourceName)}</a>
+          <span>ГИ: </span>
+          <a href="${escapeHtml(giSourceUrl)}" target="_blank" rel="noopener">${escapeHtml(giSourceName)}</a>
+        </div>
+      `;
+    }
+
+    function renderProductsSourceNote() {
+      const nutrientSource = window.PRODUCT_DATA_SOURCES?.nutrients || {};
+      const giSource = window.PRODUCT_DATA_SOURCES?.gi || {};
+      return `
+        <div class="products-source-note">
+          Источники данных: КБЖУ и ФА — <a href="${escapeHtml(nutrientSource.url || 'https://fdc.nal.usda.gov/')}" target="_blank" rel="noopener">${escapeHtml(nutrientSource.name || 'USDA FoodData Central / FRIDA')}</a>;
+          ГИ — <a href="${escapeHtml(giSource.url || 'https://glycemicindex.com/')}" target="_blank" rel="noopener">${escapeHtml(giSource.name || 'University of Sydney GI Database')}</a>.
+          Значения справочные, на 100 г продукта; фотографии иллюстративные. Для лечебного питания сверяйте с врачом и упаковкой продукта.
+        </div>
+      `;
+    }
+
     function getProductListForPage() {
       const query = (document.getElementById('productSearchInput')?.value || '').toLowerCase().trim();
       return getAllProducts().filter(item => {
@@ -825,7 +858,7 @@
 
       const products = getProductListForPage();
       if (products.length === 0) {
-        container.innerHTML = '<div class="empty-state">Ничего не найдено</div>';
+        container.innerHTML = '<div class="empty-state">Ничего не найдено</div>' + renderProductsSourceNote();
         return;
       }
 
@@ -838,13 +871,17 @@
         const fat = getProductValue(item, 'fat');
         const carbs = getProductValue(item, 'carbs');
         const gi = getProductValue(item, 'gi');
+        const image = getProductImage(item);
 
         html += `
           <button class="product-row ${isOpen ? 'expanded' : ''}" onclick="toggleProductDetails(${index})" type="button">
             <div class="product-row-main">
-              <div>
-                <div class="product-name">${escapeHtml(item.name)}</div>
-                <div class="product-category">${escapeHtml(catName)}</div>
+              <div class="product-media">
+                ${image ? `<img class="product-photo" src="${escapeHtml(image)}" alt="${escapeHtml(item.name)}" loading="lazy">` : '<div class="product-photo product-photo-empty">Фото</div>'}
+                <div>
+                  <div class="product-name">${escapeHtml(item.name)}</div>
+                  <div class="product-category">${escapeHtml(catName)}</div>
+                </div>
               </div>
               <div class="product-summary">
                 <span>${item.phe} мг ФА</span>
@@ -862,12 +899,13 @@
                 <div><span>ФА</span><b>${item.phe} мг</b></div>
                 <div><span>ГИ</span><b>${gi}</b></div>
               </div>
+              ${renderProductSource(item)}
             ` : ''}
           </button>
         `;
       });
 
-      container.innerHTML = html;
+      container.innerHTML = html + renderProductsSourceNote();
     }
 
     // 6. ДНЕВНИК И ДОБАВЛЕНИЕ ЕДЫ

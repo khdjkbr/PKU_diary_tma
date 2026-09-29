@@ -33,6 +33,12 @@ const schemas = {
       ['carbs', 'Углеводы', 'number'],
       ['phe', 'ФА, мг', 'number'],
       ['gi', 'ГИ', 'number'],
+      ['image_url', 'Фото URL', 'text'],
+      ['source_name', 'Источник данных', 'text'],
+      ['source_url', 'Ссылка на источник', 'text'],
+      ['gi_source_name', 'Источник ГИ', 'text'],
+      ['gi_source_url', 'Ссылка на источник ГИ', 'text'],
+      ['data_note', 'Примечание', 'textarea'],
       ['sort_order', 'Порядок', 'number'],
       ['is_active', 'Активен', 'checkbox']
     ]

@@ -1,4 +1,103 @@
 // База продуктов для диеты ФКУ. Значения указаны ориентировочно на 100 г.
+// КБЖУ и ФА сверяются по открытым справочникам USDA FoodData Central / FRIDA.
+// ГИ является справочным значением: у части продуктов он отсутствует или зависит от сорта и обработки.
+const FOOD_DATA_SOURCE = {
+  name: "USDA FoodData Central / FRIDA",
+  url: "https://fdc.nal.usda.gov/",
+  note: "на 100 г продукта"
+};
+
+const GI_DATA_SOURCE = {
+  name: "University of Sydney GI Database",
+  url: "https://glycemicindex.com/"
+};
+
+const PRODUCT_PHOTO_QUERIES = {
+  "Кабачок свежий": "zucchini food",
+  "Огурец свежий": "cucumber food",
+  "Помидор свежий": "tomato food",
+  "Морковь": "carrot food",
+  "Картофель отварной": "boiled potato food",
+  "Капуста белокочанная": "cabbage food",
+  "Цветная капуста": "cauliflower food",
+  "Брокколи": "broccoli food",
+  "Тыква": "pumpkin food",
+  "Свекла отварная": "beetroot food",
+  "Баклажан": "eggplant food",
+  "Зелень укроп петрушка": "parsley dill herbs food",
+  "Яблоко свежее": "apple fruit",
+  "Груша": "pear fruit",
+  "Банан": "banana fruit",
+  "Апельсин Мандарин": "orange mandarin fruit",
+  "Персик Нектарин": "peach nectarine fruit",
+  "Клубника": "strawberry fruit",
+  "Малина": "raspberry fruit",
+  "Арбуз": "watermelon fruit",
+  "Дыня": "melon fruit",
+  "Виноград": "grapes fruit",
+  "МакМастер: Вермишель н/б": "low protein pasta food",
+  "МакМастер: Мука безбелковая": "flour food",
+  "МакМастер: Рис н/б": "rice food",
+  "МакМастер: Гречка н/б": "buckwheat food",
+  "Balviten: Хлеб н/б": "bread food",
+  "Balviten: Мука н/б": "flour food",
+  "Безглютен: Печенье н/б": "cookies food",
+  "Саго крупа": "sago pearls food",
+  "Заменитель яйца н/б": "egg replacer powder food",
+  "Масло сливочное 82%": "butter food",
+  "Масло растительное": "vegetable oil food",
+  "Сахар песок": "sugar food",
+  "Мед натуральный": "honey food",
+  "Мармелад": "marmalade candy food",
+  "Рис обычный": "white rice food",
+  "Гречка обычная": "buckwheat groats food",
+  "Овсяные хлопья": "oat flakes food",
+  "Хлеб пшеничный": "wheat bread food",
+  "Молоко 2.5%": "milk glass food",
+  "Кефир 2.5%": "kefir drink food",
+  "Йогурт натуральный": "plain yogurt food",
+  "Творог 5%": "cottage cheese food",
+  "Сыр твердый": "cheese food",
+  "Куриная грудка": "chicken breast food",
+  "Говядина отварная": "beef cooked food",
+  "Рыба белая": "white fish fillet food",
+  "Яйцо куриное": "chicken egg food",
+  "Вода": "water glass",
+  "Чай без сахара": "tea cup",
+  "Сок яблочный": "apple juice food",
+  "Компот с сахаром": "fruit compote drink"
+};
+
+function productPhotoUrl(productName) {
+  const query = PRODUCT_PHOTO_QUERIES[productName] || (productName + " food");
+  return "https://loremflickr.com/320/220/" + encodeURIComponent(query);
+}
+
+function enrichProduct(item) {
+  const source = item.cat === "special"
+    ? {
+        name: "Справочно: производитель + USDA/FRIDA аналоги",
+        url: "https://fdc.nal.usda.gov/",
+        note: "проверяйте упаковку конкретного спецпродукта"
+      }
+    : FOOD_DATA_SOURCE;
+
+  return {
+    ...item,
+    image_url: item.image_url || productPhotoUrl(item.name),
+    source_name: item.source_name || source.name,
+    source_url: item.source_url || source.url,
+    gi_source_name: item.gi_source_name || GI_DATA_SOURCE.name,
+    gi_source_url: item.gi_source_url || GI_DATA_SOURCE.url,
+    data_note: item.data_note || source.note
+  };
+}
+
+window.PRODUCT_DATA_SOURCES = {
+  nutrients: FOOD_DATA_SOURCE,
+  gi: GI_DATA_SOURCE
+};
+
 window.FOOD_BASE = [
   { name: "Кабачок свежий", cat: "veg", kcal: 24, protein: 0.6, prot: 0.6, fat: 0.3, carbs: 4.6, phe: 30, gi: 15 },
   { name: "Огурец свежий", cat: "veg", kcal: 15, protein: 0.8, prot: 0.8, fat: 0.1, carbs: 2.8, phe: 20, gi: 15 },
@@ -60,4 +159,4 @@ window.FOOD_BASE = [
   { name: "Чай без сахара", cat: "drink", kcal: 1, protein: 0.0, prot: 0.0, fat: 0.0, carbs: 0.0, phe: 0, gi: 0 },
   { name: "Сок яблочный", cat: "drink", kcal: 46, protein: 0.1, prot: 0.1, fat: 0.1, carbs: 11.3, phe: 5, gi: 40 },
   { name: "Компот с сахаром", cat: "drink", kcal: 55, protein: 0.2, prot: 0.2, fat: 0.0, carbs: 13.5, phe: 5, gi: 60 }
-];
+].map(enrichProduct);
