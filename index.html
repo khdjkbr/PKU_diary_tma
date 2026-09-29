@@ -6,8 +6,8 @@
   <title>ФКУ Компас</title>
   
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="config.js?v=products-compact-1"></script>
-  <link rel="stylesheet" href="styles.css?v=products-compact-1">
+  <script src="config.js?v=profile-page-1"></script>
+  <link rel="stylesheet" href="styles.css?v=profile-page-1">
 </head>
 <body>
 
@@ -18,7 +18,7 @@
     <header class="header">
       <div class="header-top">
         <div class="header-title">🥑 ФКУ Компас</div>
-        <button class="icon-btn" onclick="openModal('settingsModal')">⚙️</button>
+        <button class="icon-btn" onclick="switchView('profile')">⚙️</button>
       </div>
 
       <div class="date-nav">
@@ -193,6 +193,38 @@
     </div>
   </div>
 
+  <!-- РАЗДЕЛ 5: ПРОФИЛЬ -->
+  <div id="viewProfile" class="app-view" style="display: none;">
+    <header class="header">
+      <div class="header-top">
+        <div class="header-title">👤 Профиль</div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="card">
+        <div style="font-size:13px; font-weight:700; color:#1e293b;" id="profileUserName">Пользователь Telegram</div>
+        <div style="font-size:11px; color:#64748b; margin-top:2px;">ID: <span id="profileUserId">...</span></div>
+        <div style="display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; margin-top:6px; background:#dcfce7; color:#15803d;" id="profileCloudBadge">● Облачная синхронизация активна</div>
+      </div>
+
+      <div class="card">
+        <div class="input-group">
+          <label class="input-label">Суточная норма Фа (мг)</label>
+          <input type="number" id="settingDailyPhe" class="input-control" placeholder="300" oninput="updateProfileProteinCalc()">
+          <span style="font-size:11px; color:#64748b; margin-top:2px; display:block;">Эквивалент естеств. белка: <b id="calcProfileProtein">6.0</b> г</span>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Количество порций смеси (АКС) в день</label>
+          <input type="number" id="settingAksPortions" class="input-control" placeholder="4">
+        </div>
+
+        <button class="btn-primary" onclick="saveSettings()">Сохранить настройки</button>
+      </div>
+    </div>
+  </div>
+
   <!-- НИЖНЯЯ НАВИГАЦИОННАЯ ПАНЕЛЬ -->
   <nav class="bottom-nav">
     <button class="nav-item" id="navBtnRecipes" onclick="switchView('recipes')">
@@ -228,7 +260,7 @@
       <span>Вики</span>
     </button>
 
-    <button class="nav-item" id="navBtnProfile" onclick="openModal('settingsModal')">
+    <button class="nav-item" id="navBtnProfile" onclick="switchView('profile')">
       <svg class="nav-icon-svg" viewBox="0 0 24 24">
         <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
         <circle cx="12" cy="7" r="4"></circle>
@@ -377,35 +409,7 @@
     </div>
   </div>
 
-  <!-- Модалка Профиля и Настроек -->
-  <div id="settingsModal" class="modal">
-    <div class="modal-content">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
-        <h3 style="font-size:16px; font-weight:700;">👤 Профиль и Настройки</h3>
-        <button class="icon-btn" onclick="closeModal('settingsModal')">✕</button>
-      </div>
-
-      <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:12px; margin-bottom:14px;">
-        <div style="font-size:13px; font-weight:700; color:#1e293b;" id="profileUserName">Пользователь Telegram</div>
-        <div style="font-size:11px; color:#64748b; margin-top:2px;">ID: <span id="profileUserId">...</span></div>
-        <div style="display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; margin-top:6px; background:#dcfce7; color:#15803d;" id="profileCloudBadge">🟢 Облачная синхронизация активна</div>
-      </div>
-
-      <div class="input-group">
-        <label class="input-label">Суточная норма Фа (мг)</label>
-        <input type="number" id="settingDailyPhe" class="input-control" placeholder="300" oninput="updateProfileProteinCalc()">
-        <span style="font-size:11px; color:#64748b; margin-top:2px; display:block;">Эквивалент естеств. белка: <b id="calcProfileProtein">6.0</b> г</span>
-      </div>
-
-      <div class="input-group">
-        <label class="input-label">Количество порций смеси (АКС) в день</label>
-        <input type="number" id="settingAksPortions" class="input-control" placeholder="4">
-      </div>
-
-      <button class="btn-primary" onclick="saveSettings()">Сохранить настройки</button>
-    </div>
-  </div>
-  <script src="products.js?v=products-compact-1"></script>
-  <script src="app.js?v=products-compact-1"></script>
+  <script src="products.js?v=profile-page-1"></script>
+  <script src="app.js?v=profile-page-1"></script>
 </body>
 </html>

@@ -116,6 +116,7 @@
       const isRecipes = (viewName === 'recipes');
       const isProducts = (viewName === 'products');
       const isWiki = (viewName === 'wiki');
+      const isProfile = (viewName === 'profile');
       
       const vDiary = document.getElementById('viewDiary');
       if (vDiary) vDiary.style.display = isDiary ? 'block' : 'none';
@@ -128,6 +129,9 @@
 
       const vWiki = document.getElementById('viewWiki');
       if (vWiki) vWiki.style.display = isWiki ? 'block' : 'none';
+
+      const vProfile = document.getElementById('viewProfile');
+      if (vProfile) vProfile.style.display = isProfile ? 'block' : 'none';
 
       const fabLabel = document.getElementById('navFabLabel');
       if (fabLabel) fabLabel.style.color = isDiary ? '#10b981' : '#64748b';
@@ -145,7 +149,7 @@
       if (btnWiki && btnWiki.classList) btnWiki.classList.toggle('active', isWiki);
 
       const btnProf = document.getElementById('navBtnProfile');
-      if (btnProf && btnProf.classList) btnProf.classList.remove('active');
+      if (btnProf && btnProf.classList) btnProf.classList.toggle('active', isProfile);
 
       if (isRecipes) {
         renderRecipes();
@@ -154,6 +158,10 @@
 
       if (isProducts) {
         renderProductsPage();
+      }
+
+      if (isProfile) {
+        renderProfileSettings();
       }
     }
     window.switchView = switchView;
@@ -164,7 +172,7 @@
         navBtnProducts: () => switchView('products'),
         navBtnDiary: () => switchView('diary'),
         navBtnWiki: () => switchView('wiki'),
-        navBtnProfile: () => openModal('settingsModal')
+        navBtnProfile: () => switchView('profile')
       };
 
       Object.entries(handlers).forEach(([id, handler]) => {
@@ -1266,16 +1274,17 @@
     }
     window.updateProfileProteinCalc = updateProfileProteinCalc;
 
+    function renderProfileSettings() {
+      const sPhe = document.getElementById('settingDailyPhe');
+      if (sPhe) sPhe.value = appData.settings.dailyPhe;
+
+      const sAks = document.getElementById('settingAksPortions');
+      if (sAks) sAks.value = appData.settings.aksPortions;
+
+      updateProfileProteinCalc();
+    }
+
     function openModal(id) {
-      if (id === 'settingsModal') {
-        const sPhe = document.getElementById('settingDailyPhe');
-        if (sPhe) sPhe.value = appData.settings.dailyPhe;
-
-        const sAks = document.getElementById('settingAksPortions');
-        if (sAks) sAks.value = appData.settings.aksPortions;
-
-        updateProfileProteinCalc();
-      }
       const el = document.getElementById(id);
       if (el && el.classList) el.classList.add('active');
     }
@@ -1297,7 +1306,7 @@
       }
       saveLocal();
       render();
-      closeModal('settingsModal');
+      renderProfileSettings();
 
       if (hasSupabase) {
         try {
