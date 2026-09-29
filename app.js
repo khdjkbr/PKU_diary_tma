@@ -793,23 +793,6 @@
       return item.image_url || item.image || '';
     }
 
-    function renderProductSource(item) {
-      const sourceName = item.source_name || 'USDA FoodData Central / FRIDA';
-      const sourceUrl = item.source_url || 'https://fdc.nal.usda.gov/';
-      const giSourceName = item.gi_source_name || 'University of Sydney GI Database';
-      const giSourceUrl = item.gi_source_url || 'https://glycemicindex.com/';
-      const note = item.data_note || 'на 100 г продукта';
-
-      return `
-        <div class="product-source">
-          <span>${escapeHtml(note)}</span>
-          <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener">${escapeHtml(sourceName)}</a>
-          <span>ГИ: </span>
-          <a href="${escapeHtml(giSourceUrl)}" target="_blank" rel="noopener">${escapeHtml(giSourceName)}</a>
-        </div>
-      `;
-    }
-
     function renderProductsSourceNote() {
       const nutrientSource = window.PRODUCT_DATA_SOURCES?.nutrients || {};
       const giSource = window.PRODUCT_DATA_SOURCES?.gi || {};
@@ -899,7 +882,6 @@
                 <div><span>ФА</span><b>${item.phe} мг</b></div>
                 <div><span>ГИ</span><b>${gi}</b></div>
               </div>
-              ${renderProductSource(item)}
             ` : ''}
           </button>
         `;

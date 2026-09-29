@@ -374,20 +374,6 @@
       overflow-wrap: anywhere;
     }
 
-    .product-source {
-      border-top: 1px solid #dcfce7;
-      color: #64748b;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 4px 8px;
-      font-size: 10px;
-      font-weight: 700;
-      line-height: 1.4;
-      margin-top: 10px;
-      padding-top: 8px;
-    }
-
-    .product-source a,
     .products-source-note a {
       color: #047857;
       text-decoration: none;
