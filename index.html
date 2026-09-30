@@ -4,10 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>ФКУ Компас</title>
-  
+
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="config.js?v=profile-page-1"></script>
-  <link rel="stylesheet" href="styles.css?v=profile-page-1">
+  <script src="config.js?v=pku-profile-1"></script>
+  <link rel="stylesheet" href="styles.css?v=pku-profile-1">
 </head>
 <body>
 
@@ -110,6 +110,16 @@
         <button id="tabAllRecipes" class="chip active" onclick="switchRecipeTab('all')">🌍 Все рецепты</button>
         <button id="tabMyRecipes" class="chip" onclick="switchRecipeTab('my')">⭐ Только мои</button>
       </div>
+
+      <div class="category-chips" id="recipeCategoryChips" style="margin-top: 4px; margin-bottom: 0;">
+        <button class="chip active" onclick="setRecipeCategory('all', this)">Все категории</button>
+        <button class="chip" onclick="setRecipeCategory('breakfast', this)">Завтраки</button>
+        <button class="chip" onclick="setRecipeCategory('soup', this)">Супы</button>
+        <button class="chip" onclick="setRecipeCategory('main', this)">Основные</button>
+        <button class="chip" onclick="setRecipeCategory('bakery', this)">Выпечка</button>
+        <button class="chip" onclick="setRecipeCategory('dessert', this)">Десерты</button>
+        <button class="chip" onclick="setRecipeCategory('snack', this)">Перекусы</button>
+      </div>
     </header>
 
     <div class="container">
@@ -187,6 +197,38 @@
         </div>
       </div>
 
+      <div class="wiki-card">
+        <div class="wiki-card-icon">🏷️</div>
+        <div>
+          <h3>Как читать этикетку</h3>
+          <p>Смотрите белок на 100 г, состав и вес порции. Если ФА не указан, используйте расчет от натурального белка только как приблизительную оценку.</p>
+        </div>
+      </div>
+
+      <div class="wiki-card">
+        <div class="wiki-card-icon">⚠️</div>
+        <div>
+          <h3>Если лимит превышен</h3>
+          <p>Не паникуйте и не отменяйте смесь самостоятельно. Зафиксируйте день в дневнике и обсудите повторяющиеся превышения со специалистом.</p>
+        </div>
+      </div>
+
+      <div class="wiki-card">
+        <div class="wiki-card-icon">🔁</div>
+        <div>
+          <h3>Низкобелковые замены</h3>
+          <p>Держите под рукой разрешенные макароны, хлеб, муку и крупы. Замена обычного продукта на низкобелковый часто сильно снижает ФА блюда.</p>
+        </div>
+      </div>
+
+      <div class="wiki-card">
+        <div class="wiki-card-icon">✅</div>
+        <div>
+          <h3>Частые ошибки</h3>
+          <p>Не забывайте учитывать перекусы, напитки с добавками, соусы и изменение веса блюда после приготовления.</p>
+        </div>
+      </div>
+
       <div class="wiki-note">
         Информация в разделе справочная. Индивидуальные нормы и лечебное питание нужно согласовывать с врачом или диетологом.
       </div>
@@ -208,7 +250,23 @@
         <div style="display:inline-block; font-size:10px; font-weight:600; padding:2px 8px; border-radius:10px; margin-top:6px; background:#dcfce7; color:#15803d;" id="profileCloudBadge">● Облачная синхронизация активна</div>
       </div>
 
-      <div class="card">
+      <div class="profile-tabs">
+        <button class="profile-tab active" id="profileTabMain" onclick="switchProfilePanel('main')">Основное</button>
+        <button class="profile-tab" id="profileTabPku" onclick="switchProfilePanel('pku')">ФКУ</button>
+      </div>
+
+      <div class="card profile-panel active" id="profilePanelMain">
+        <div class="input-group">
+          <label class="input-label" id="settingLanguageLabel">Язык приложения</label>
+          <select id="settingLanguage" class="input-control" onchange="changeLanguage(this.value)">
+            <option value="ru">Русский</option>
+            <option value="en">English</option>
+            <option value="uz">O'zbekcha</option>
+            <option value="kk">Қазақша</option>
+            <option value="tg">Тоҷикӣ</option>
+          </select>
+        </div>
+
         <div class="input-group">
           <label class="input-label">Суточная норма Фа (мг)</label>
           <input type="number" id="settingDailyPhe" class="input-control" placeholder="300" oninput="updateProfileProteinCalc()">
@@ -221,6 +279,47 @@
         </div>
 
         <button class="btn-primary" onclick="saveSettings()">Сохранить настройки</button>
+      </div>
+
+      <div class="card profile-panel" id="profilePanelPku">
+        <div class="grid-2">
+          <div class="input-group">
+            <label class="input-label">Возраст</label>
+            <input type="number" id="settingAge" class="input-control" placeholder="Напр. 8">
+          </div>
+
+          <div class="input-group">
+            <label class="input-label">Вес, кг</label>
+            <input type="number" id="settingWeightKg" class="input-control" placeholder="Напр. 24">
+          </div>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Лимит натурального белка, г</label>
+          <input type="number" id="settingNaturalProteinLimit" class="input-control" placeholder="Авто по ФА">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Специалист / диетолог</label>
+          <input type="text" id="settingClinicianName" class="input-control" placeholder="Имя или клиника">
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">Заметки по лечению</label>
+          <textarea id="settingCareNotes" class="input-control" rows="4" placeholder="Например: схема смеси, важные продукты, рекомендации врача"></textarea>
+        </div>
+
+        <label class="profile-check">
+          <input type="checkbox" id="settingShowPheWarnings">
+          <span>Показывать предупреждения при приближении к лимиту ФА</span>
+        </label>
+
+        <label class="profile-check">
+          <input type="checkbox" id="settingAksReminders">
+          <span>Напоминать про порции АКС</span>
+        </label>
+
+        <button class="btn-primary" onclick="saveSettings()">Сохранить персонализацию</button>
       </div>
     </div>
   </div>
@@ -336,6 +435,18 @@
         <input type="text" id="recipeNameInput" class="input-control" placeholder="Например: Овощной суп с вермишелью">
       </div>
 
+      <div class="input-group">
+        <label class="input-label">Категория рецепта</label>
+        <select id="recipeCategorySelect" class="input-control">
+          <option value="main">Основные</option>
+          <option value="breakfast">Завтраки</option>
+          <option value="soup">Супы</option>
+          <option value="bakery">Выпечка</option>
+          <option value="dessert">Десерты</option>
+          <option value="snack">Перекусы</option>
+        </select>
+      </div>
+
       <div style="background:#f8fafc; border:1px solid #e2e8f0; border-radius:12px; padding:10px; margin-bottom:10px;">
         <span style="font-size:11px; font-weight:700; color:#475569; text-transform:uppercase;">Добавить ингредиент:</span>
         <div style="margin-top:6px;">
@@ -362,12 +473,18 @@
         <span style="font-size:10px; color:#64748b; display:block; margin-top:2px;">Взвесьте блюдо после приготовления</span>
       </div>
 
+      <div class="input-group">
+        <label class="input-label">Вес одной порции (г)</label>
+        <input type="number" id="recipePortionWeightInput" class="input-control" placeholder="Например: 180" oninput="calculateRecipeTotals()">
+      </div>
+
       <div style="background:#ecfdf5; border:1px solid #a7f3d0; padding:12px; border-radius:12px; margin-bottom:12px;">
         <div style="font-size:11px; color:#065f46; font-weight:600;">РАСЧЕТ НА 100 Г ГОТОВОГО БЛЮДА:</div>
         <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
           <span style="font-size:16px; font-weight:800; color:#047857;" id="recipeResultPhe">0 мг Фа</span>
           <span style="font-size:13px; font-weight:700; color:#047857;" id="recipeResultProt">0.0 г белка</span>
         </div>
+        <div id="recipeResultPortion" style="font-size:12px; color:#047857; font-weight:700; margin-top:6px;">Порция: укажите вес</div>
       </div>
 
       <div style="display:flex; align-items:center; gap:8px; margin-bottom:14px; background:#f1f5f9; padding:10px; border-radius:10px;">
@@ -409,7 +526,7 @@
     </div>
   </div>
 
-  <script src="products.js?v=profile-page-1"></script>
-  <script src="app.js?v=profile-page-1"></script>
+  <script src="products.js?v=pku-profile-1"></script>
+  <script src="app.js?v=pku-profile-1"></script>
 </body>
 </html>

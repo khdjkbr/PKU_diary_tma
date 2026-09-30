@@ -25,9 +25,166 @@
     let currentProductCategory = 'all';
     let currentExpandedProductIndex = null;
     let currentRecipeFilter = 'all';
+    let currentRecipeCategory = 'all';
+
+    const defaultSettings = {
+      dailyPhe: 300,
+      aksPortions: 4,
+      age: '',
+      weightKg: '',
+      naturalProteinLimit: '',
+      clinicianName: '',
+      careNotes: '',
+      showPheWarnings: true,
+      aksReminders: false,
+      language: 'ru'
+    };
+
+    const i18n = {
+      ru: {
+        appTitle: '🥑 ФКУ Компас',
+        recipes: 'Рецепты',
+        products: 'Продукты',
+        diary: 'Дневник',
+        wiki: 'Вики',
+        profile: 'Профиль',
+        recipesTitle: '🍲 Рецепты сообщества',
+        create: '+ Создать',
+        productsTitle: '🥦 Продукты',
+        productSearch: '🔍 Найти продукт...',
+        wikiTitle: '📚 Вики',
+        allRecipes: '🌍 Все рецепты',
+        myRecipes: '⭐ Только мои',
+        allCategories: 'Все категории',
+        breakfast: 'Завтраки',
+        soup: 'Супы',
+        main: 'Основные',
+        bakery: 'Выпечка',
+        dessert: 'Десерты',
+        snack: 'Перекусы',
+        profileMain: 'Основное',
+        profilePku: 'ФКУ',
+        language: 'Язык приложения',
+        saveSettings: 'Сохранить настройки',
+        savePersonalization: 'Сохранить персонализацию'
+      },
+      en: {
+        appTitle: '🥑 PKU Compass',
+        recipes: 'Recipes',
+        products: 'Foods',
+        diary: 'Diary',
+        wiki: 'Wiki',
+        profile: 'Profile',
+        recipesTitle: '🍲 Community recipes',
+        create: '+ Create',
+        productsTitle: '🥦 Foods',
+        productSearch: '🔍 Find food...',
+        wikiTitle: '📚 Wiki',
+        allRecipes: '🌍 All recipes',
+        myRecipes: '⭐ Mine',
+        allCategories: 'All categories',
+        breakfast: 'Breakfasts',
+        soup: 'Soups',
+        main: 'Main dishes',
+        bakery: 'Bakery',
+        dessert: 'Desserts',
+        snack: 'Snacks',
+        profileMain: 'Settings',
+        profilePku: 'PKU',
+        language: 'App language',
+        saveSettings: 'Save settings',
+        savePersonalization: 'Save personalization'
+      },
+      uz: {
+        appTitle: '🥑 FKU Kompas',
+        recipes: 'Retseptlar',
+        products: 'Mahsulotlar',
+        diary: 'Kundalik',
+        wiki: 'Viki',
+        profile: 'Profil',
+        recipesTitle: '🍲 Jamiyat retseptlari',
+        create: '+ Yaratish',
+        productsTitle: '🥦 Mahsulotlar',
+        productSearch: '🔍 Mahsulot topish...',
+        wikiTitle: '📚 Viki',
+        allRecipes: '🌍 Barcha retseptlar',
+        myRecipes: '⭐ Mening',
+        allCategories: 'Barcha toifalar',
+        breakfast: 'Nonushta',
+        soup: 'Sho‘rvalar',
+        main: 'Asosiy',
+        bakery: 'Pishiriqlar',
+        dessert: 'Desertlar',
+        snack: 'Tamaddilar',
+        profileMain: 'Sozlamalar',
+        profilePku: 'FKU',
+        language: 'Ilova tili',
+        saveSettings: 'Sozlamalarni saqlash',
+        savePersonalization: 'Shaxsiy sozlamalarni saqlash'
+      },
+      kk: {
+        appTitle: '🥑 ФКУ Компас',
+        recipes: 'Рецепттер',
+        products: 'Өнімдер',
+        diary: 'Күнделік',
+        wiki: 'Вики',
+        profile: 'Профиль',
+        recipesTitle: '🍲 Қауымдастық рецепттері',
+        create: '+ Қосу',
+        productsTitle: '🥦 Өнімдер',
+        productSearch: '🔍 Өнім табу...',
+        wikiTitle: '📚 Вики',
+        allRecipes: '🌍 Барлық рецепттер',
+        myRecipes: '⭐ Менің',
+        allCategories: 'Барлық санаттар',
+        breakfast: 'Таңғы ас',
+        soup: 'Сорпалар',
+        main: 'Негізгі',
+        bakery: 'Пісірме',
+        dessert: 'Десерттер',
+        snack: 'Тіскебасар',
+        profileMain: 'Баптаулар',
+        profilePku: 'ФКУ',
+        language: 'Қолданба тілі',
+        saveSettings: 'Баптауларды сақтау',
+        savePersonalization: 'Жеке баптауларды сақтау'
+      },
+      tg: {
+        appTitle: '🥑 ФКУ Компас',
+        recipes: 'Дорухатҳо',
+        products: 'Маҳсулот',
+        diary: 'Рӯзнома',
+        wiki: 'Вики',
+        profile: 'Профил',
+        recipesTitle: '🍲 Дорухатҳои ҷомеа',
+        create: '+ Эҷод',
+        productsTitle: '🥦 Маҳсулот',
+        productSearch: '🔍 Ҷустуҷӯи маҳсулот...',
+        wikiTitle: '📚 Вики',
+        allRecipes: '🌍 Ҳамаи дорухатҳо',
+        myRecipes: '⭐ Аз ман',
+        allCategories: 'Ҳамаи гурӯҳҳо',
+        breakfast: 'Наҳорӣ',
+        soup: 'Шӯрбоҳо',
+        main: 'Асосӣ',
+        bakery: 'Нонӣ',
+        dessert: 'Ширинӣ',
+        snack: 'Газакҳо',
+        profileMain: 'Танзимот',
+        profilePku: 'ФКУ',
+        language: 'Забони барнома',
+        saveSettings: 'Сабти танзимот',
+        savePersonalization: 'Сабти шахсисозӣ'
+      }
+    };
+
+    function tr(key) {
+      const lang = appData?.settings?.language || 'ru';
+      return i18n[lang]?.[key] || i18n.ru[key] || key;
+    }
 
     let appData = {
-      settings: { dailyPhe: 300, aksPortions: 4 },
+      settings: { ...defaultSettings },
       today: getFormattedDate(currentDateObj),
       aks: [false, false, false, false],
       entries: []
@@ -90,6 +247,46 @@
         '"': '&quot;',
         "'": '&#39;'
       }[char]));
+    }
+
+    function setText(selector, text) {
+      const el = document.querySelector(selector);
+      if (el) el.textContent = text;
+    }
+
+    function setPlaceholder(selector, text) {
+      const el = document.querySelector(selector);
+      if (el) el.placeholder = text;
+    }
+
+    function applyTranslations() {
+      document.documentElement.lang = appData.settings.language || 'ru';
+      setText('#viewDiary .header-title', tr('appTitle'));
+      setText('#navBtnRecipes span', tr('recipes'));
+      setText('#navBtnProducts span', tr('products'));
+      setText('#navFabLabel', tr('diary'));
+      setText('#navBtnWiki span', tr('wiki'));
+      setText('#navBtnProfile span', tr('profile'));
+      setText('#viewRecipes .header-title', tr('recipesTitle'));
+      setText('#viewRecipes .header-top .btn-primary', tr('create'));
+      setText('#viewProducts .header-title', tr('productsTitle'));
+      setPlaceholder('#productSearchInput', tr('productSearch'));
+      setText('#viewWiki .header-title', tr('wikiTitle'));
+      setText('#viewProfile .header-title', '👤 ' + tr('profile'));
+      setText('#tabAllRecipes', tr('allRecipes'));
+      setText('#tabMyRecipes', tr('myRecipes'));
+      setText('#recipeCategoryChips button:nth-child(1)', tr('allCategories'));
+      setText('#recipeCategoryChips button:nth-child(2)', tr('breakfast'));
+      setText('#recipeCategoryChips button:nth-child(3)', tr('soup'));
+      setText('#recipeCategoryChips button:nth-child(4)', tr('main'));
+      setText('#recipeCategoryChips button:nth-child(5)', tr('bakery'));
+      setText('#recipeCategoryChips button:nth-child(6)', tr('dessert'));
+      setText('#recipeCategoryChips button:nth-child(7)', tr('snack'));
+      setText('#profileTabMain', tr('profileMain'));
+      setText('#profileTabPku', tr('profilePku'));
+      setText('#settingLanguageLabel', tr('language'));
+      setText('#profilePanelMain .btn-primary', tr('saveSettings'));
+      setText('#profilePanelPku .btn-primary', tr('savePersonalization'));
     }
 
     function mapDiaryEntry(row) {
@@ -318,7 +515,7 @@
       try {
         const savedSettings = localStorage.getItem('pku_settings_' + currentTelegramId);
         if (savedSettings) {
-          try { appData.settings = JSON.parse(savedSettings); } catch(e){}
+          try { appData.settings = { ...defaultSettings, ...JSON.parse(savedSettings) }; } catch(e){}
         }
 
         const savedCustom = localStorage.getItem('pku_custom_products_' + currentTelegramId);
@@ -339,6 +536,7 @@
 
         setCloudStatus(hasSupabase ? 'pending' : 'off', hasSupabase ? 'Синхронизация...' : 'Облачная синхронизация не настроена');
         setupBottomNavigation();
+        applyTranslations();
         filterFoodList();
         loadProductsFromSupabase();
         loadWikiFromSupabase();
@@ -377,13 +575,32 @@
     }
     window.switchRecipeTab = switchRecipeTab;
 
+    const recipeCategoryKeys = {
+      breakfast: 'breakfast',
+      soup: 'soup',
+      main: 'main',
+      bakery: 'bakery',
+      dessert: 'dessert',
+      snack: 'snack'
+    };
+
+    function setRecipeCategory(category, btn) {
+      currentRecipeCategory = category;
+      document.querySelectorAll('#recipeCategoryChips .chip').forEach(chip => chip.classList.remove('active'));
+      if (btn && btn.classList) btn.classList.add('active');
+      renderRecipes();
+    }
+    window.setRecipeCategory = setRecipeCategory;
+
     function renderRecipes() {
       const container = document.getElementById('recipesContainer');
       if (!container) return;
 
-      const list = (currentRecipeFilter === 'my') 
-        ? allRecipes.filter(r => String(r.telegram_id) === String(currentTelegramId))
-        : allRecipes;
+      const list = allRecipes.filter(r => {
+        const matchesOwner = currentRecipeFilter !== 'my' || String(r.telegram_id) === String(currentTelegramId);
+        const matchesCategory = currentRecipeCategory === 'all' || (r.category || 'main') === currentRecipeCategory;
+        return matchesOwner && matchesCategory;
+      });
 
       if (list.length === 0) {
         container.innerHTML = `
@@ -403,13 +620,17 @@
         const ingrText = (r.ingredients || []).map(i => `${escapeHtml(i.name)} (${i.weight}г)`).join(', ');
         const title = escapeHtml(r.title);
         const author = escapeHtml(r.author_name || 'Сообщество');
+        const categoryName = tr(recipeCategoryKeys[r.category || 'main'] || 'main');
+        const portionWeight = Number(r.portion_weight || 0);
+        const portionPhe = portionWeight > 0 ? Math.round((portionWeight * Number(r.phe_per_100 || 0)) / 100) : null;
+        const portionProt = portionWeight > 0 ? ((portionWeight * Number(r.prot_per_100 || 0)) / 100).toFixed(2) : null;
 
         html += `
           <div class="recipe-card">
             <div class="recipe-header">
               <div>
                 <div class="recipe-title">🍲 ${title}</div>
-                <div class="recipe-author">${isOwner ? '⭐ Ваш рецепт' : 'Автор: ' + author} • Выход: ${r.cooked_weight} г</div>
+                <div class="recipe-author">${escapeHtml(categoryName)} • ${isOwner ? '⭐ Ваш рецепт' : 'Автор: ' + author} • Выход: ${r.cooked_weight} г</div>
               </div>
               ${isOwner ? `<button onclick="deleteRecipe(${globalIdx})" style="border:none; background:none; color:#ef4444; font-size:14px; cursor:pointer;">🗑️</button>` : ''}
             </div>
@@ -421,6 +642,7 @@
             <div class="recipe-pills">
               <div class="recipe-pill">${r.phe_per_100} мг Фа / 100г</div>
               <div class="recipe-pill" style="background:#eff6ff; border-color:#bfdbfe; color:#1d4ed8;">${r.prot_per_100} г белка / 100г</div>
+              ${portionWeight > 0 ? `<div class="recipe-pill" style="background:#fff7ed; border-color:#fed7aa; color:#c2410c;">Порция ${portionWeight}г: ${portionPhe} мг Фа (${portionProt} г б.)</div>` : ''}
             </div>
 
             <div class="recipe-actions">
@@ -475,7 +697,7 @@
       if (titleEl) titleEl.textContent = `Добавить "${selectedRecipeForQuickAdd.title}"`;
       
       const wEl = document.getElementById('quickRecipeWeight');
-      if (wEl) wEl.value = '100';
+      if (wEl) wEl.value = selectedRecipeForQuickAdd.portion_weight || '100';
       
       calcQuickRecipePreview();
       openModal('quickAddRecipeModal');
@@ -529,15 +751,24 @@
       currentRecipeIngredients = [];
       const nameEl = document.getElementById('recipeNameInput');
       if (nameEl) nameEl.value = '';
+
+      const catEl = document.getElementById('recipeCategorySelect');
+      if (catEl) catEl.value = 'main';
       
       const wCooked = document.getElementById('recipeCookedWeightInput');
       if (wCooked) wCooked.value = '';
+
+      const portionWeight = document.getElementById('recipePortionWeightInput');
+      if (portionWeight) portionWeight.value = '';
       
       const resPhe = document.getElementById('recipeResultPhe');
       if (resPhe) resPhe.textContent = '0 мг Фа';
       
       const resProt = document.getElementById('recipeResultProt');
       if (resProt) resProt.textContent = '0.0 г белка';
+
+      const resPortion = document.getElementById('recipeResultPortion');
+      if (resPortion) resPortion.textContent = 'Порция: укажите вес';
       
       const checkPub = document.getElementById('recipeIsPublicCheck');
       if (checkPub) checkPub.checked = true;
@@ -634,12 +865,24 @@
       if (cookedWeight > 0) {
         const phePer100 = Math.round((totalRawPhe / cookedWeight) * 100);
         const protPer100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
+        const portionWeight = parseFloat(document.getElementById('recipePortionWeightInput')?.value) || 0;
 
         const resPhe = document.getElementById('recipeResultPhe');
         if (resPhe) resPhe.textContent = phePer100 + ' мг Фа';
         
         const resProt = document.getElementById('recipeResultProt');
         if (resProt) resProt.textContent = protPer100 + ' г белка';
+
+        const resPortion = document.getElementById('recipeResultPortion');
+        if (resPortion) {
+          if (portionWeight > 0) {
+            const portionPhe = Math.round((portionWeight * phePer100) / 100);
+            const portionProt = ((portionWeight * protPer100) / 100).toFixed(2);
+            resPortion.textContent = `Порция ${portionWeight} г: ${portionPhe} мг Фа (${portionProt} г б.)`;
+          } else {
+            resPortion.textContent = 'Порция: укажите вес';
+          }
+        }
       }
     }
     window.calculateRecipeTotals = calculateRecipeTotals;
@@ -647,6 +890,7 @@
     async function saveRecipe() {
       const name = document.getElementById('recipeNameInput')?.value.trim();
       const isPublic = document.getElementById('recipeIsPublicCheck')?.checked || false;
+      const category = document.getElementById('recipeCategorySelect')?.value || 'main';
 
       if (!name) {
         alert('Введите название рецепта');
@@ -671,13 +915,16 @@
       let cookedWeight = parseFloat(wCookedEl?.value) || totalRawWeight;
       const finalPhe100 = Math.round((totalRawPhe / cookedWeight) * 100);
       const finalProt100 = parseFloat(((totalRawProt / cookedWeight) * 100).toFixed(2));
+      const portionWeight = parseFloat(document.getElementById('recipePortionWeightInput')?.value) || 0;
 
       const newRecipe = {
         telegram_id: currentTelegramId,
         author_name: tgUser.first_name || 'Пользователь',
         title: name,
+        category: category,
         ingredients: currentRecipeIngredients,
         cooked_weight: cookedWeight,
+        portion_weight: portionWeight,
         phe_per_100: finalPhe100,
         prot_per_100: finalProt100,
         is_public: isPublic
@@ -1274,15 +1521,57 @@
     }
     window.updateProfileProteinCalc = updateProfileProteinCalc;
 
+    function switchProfilePanel(panel) {
+      const isMain = panel === 'main';
+      document.getElementById('profileTabMain')?.classList.toggle('active', isMain);
+      document.getElementById('profileTabPku')?.classList.toggle('active', !isMain);
+      document.getElementById('profilePanelMain')?.classList.toggle('active', isMain);
+      document.getElementById('profilePanelPku')?.classList.toggle('active', !isMain);
+    }
+    window.switchProfilePanel = switchProfilePanel;
+
     function renderProfileSettings() {
+      const lang = document.getElementById('settingLanguage');
+      if (lang) lang.value = appData.settings.language || 'ru';
+
       const sPhe = document.getElementById('settingDailyPhe');
       if (sPhe) sPhe.value = appData.settings.dailyPhe;
 
       const sAks = document.getElementById('settingAksPortions');
       if (sAks) sAks.value = appData.settings.aksPortions;
 
+      const age = document.getElementById('settingAge');
+      if (age) age.value = appData.settings.age || '';
+
+      const weight = document.getElementById('settingWeightKg');
+      if (weight) weight.value = appData.settings.weightKg || '';
+
+      const proteinLimit = document.getElementById('settingNaturalProteinLimit');
+      if (proteinLimit) proteinLimit.value = appData.settings.naturalProteinLimit || '';
+
+      const clinician = document.getElementById('settingClinicianName');
+      if (clinician) clinician.value = appData.settings.clinicianName || '';
+
+      const notes = document.getElementById('settingCareNotes');
+      if (notes) notes.value = appData.settings.careNotes || '';
+
+      const warnings = document.getElementById('settingShowPheWarnings');
+      if (warnings) warnings.checked = appData.settings.showPheWarnings !== false;
+
+      const reminders = document.getElementById('settingAksReminders');
+      if (reminders) reminders.checked = appData.settings.aksReminders === true;
+
       updateProfileProteinCalc();
+      applyTranslations();
     }
+
+    function changeLanguage(language) {
+      appData.settings.language = i18n[language] ? language : 'ru';
+      saveLocal();
+      applyTranslations();
+      renderRecipes();
+    }
+    window.changeLanguage = changeLanguage;
 
     function openModal(id) {
       const el = document.getElementById(id);
@@ -1299,7 +1588,15 @@
     async function saveSettings() {
       const phe = parseInt(document.getElementById('settingDailyPhe')?.value) || 300;
       const aksCount = parseInt(document.getElementById('settingAksPortions')?.value) || 4;
+      appData.settings.language = document.getElementById('settingLanguage')?.value || appData.settings.language || 'ru';
       appData.settings.dailyPhe = phe;
+      appData.settings.age = document.getElementById('settingAge')?.value.trim() || '';
+      appData.settings.weightKg = document.getElementById('settingWeightKg')?.value.trim() || '';
+      appData.settings.naturalProteinLimit = document.getElementById('settingNaturalProteinLimit')?.value.trim() || '';
+      appData.settings.clinicianName = document.getElementById('settingClinicianName')?.value.trim() || '';
+      appData.settings.careNotes = document.getElementById('settingCareNotes')?.value.trim() || '';
+      appData.settings.showPheWarnings = document.getElementById('settingShowPheWarnings')?.checked !== false;
+      appData.settings.aksReminders = document.getElementById('settingAksReminders')?.checked === true;
       if (appData.settings.aksPortions !== aksCount) {
         appData.settings.aksPortions = aksCount;
         appData.aks = new Array(aksCount).fill(false);

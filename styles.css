@@ -65,8 +65,64 @@
     .input-group { margin-bottom: 10px; }
     .input-label { display: block; font-size: 11px; font-weight: 700; color: #64748b; margin-bottom: 4px; text-transform: uppercase; }
     .input-control { width: 100%; padding: 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 14px; }
+    textarea.input-control { line-height: 1.4; resize: vertical; }
     .input-highlight { border: 2px solid #10b981; background: #f0fdf4; font-weight: bold; font-size: 15px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .profile-tabs {
+      background: #e2e8f0;
+      border: 1px solid #cbd5e1;
+      border-radius: 14px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 4px;
+      padding: 4px;
+    }
+
+    .profile-tab {
+      background: transparent;
+      border: none;
+      border-radius: 10px;
+      color: #475569;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 800;
+      padding: 9px 10px;
+      touch-action: manipulation;
+    }
+
+    .profile-tab.active {
+      background: #fff;
+      color: #047857;
+      box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08);
+    }
+
+    .profile-panel { display: none; }
+    .profile-panel.active { display: block; }
+
+    .profile-check {
+      align-items: flex-start;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      color: #334155;
+      cursor: pointer;
+      display: flex;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.35;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+
+    .profile-check input {
+      accent-color: #10b981;
+      flex: 0 0 auto;
+      height: 18px;
+      margin-top: 0;
+      width: 18px;
+    }
 
     .category-chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 6px; margin-bottom: 8px; -webkit-overflow-scrolling: touch; }
     .chip { font-size: 11px; padding: 6px 12px; border-radius: 14px; background: #f1f5f9; color: #475569; border: none; cursor: pointer; white-space: nowrap; font-weight: 600; touch-action: manipulation; }

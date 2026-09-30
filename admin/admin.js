@@ -55,6 +55,22 @@ const schemas = {
       ['is_published', 'Опубликовано', 'checkbox']
     ]
   }
+  ,
+  recipes: {
+    table: 'recipes',
+    key: 'id',
+    title: 'рецепт',
+    fields: [
+      ['title', 'Название', 'text', true],
+      ['category', 'Категория', 'select', true, ['breakfast', 'soup', 'main', 'bakery', 'dessert', 'snack']],
+      ['author_name', 'Автор', 'text'],
+      ['cooked_weight', 'Выход, г', 'number'],
+      ['portion_weight', 'Порция, г', 'number'],
+      ['phe_per_100', 'ФА/100 г', 'number'],
+      ['prot_per_100', 'Белок/100 г', 'number'],
+      ['is_public', 'Публичный', 'checkbox']
+    ]
+  }
 };
 
 function $(id) {
